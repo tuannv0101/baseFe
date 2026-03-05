@@ -1,12 +1,30 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 export const ROUTES = {
-  HOME: '/',
   LOGIN: '/login',
-  ROOM_DETAIL: '/room/:id',
+  
+  // Super Admin
+  ADMIN_DASHBOARD: '/admin',
+  ADMIN_HOSTS: '/admin/hosts',
+  ADMIN_SUBSCRIPTIONS: '/admin/subscriptions',
+  ADMIN_SETTINGS: '/admin/settings',
+  ADMIN_TICKETS: '/admin/tickets',
+
+  // Landlord/Host
+  HOST_DASHBOARD: '/host',
+  HOST_ROOMS: '/host/rooms',
+  HOST_TENANTS: '/host/tenants',
+  HOST_FINANCE: '/host/finance',
+  HOST_STAFF: '/host/staff',
+  HOST_SERVICES: '/host/services',
+
+  // Tenant
+  TENANT_DASHBOARD: '/tenant',
+  TENANT_INVOICES: '/tenant/invoices',
+  TENANT_MAINTENANCE: '/tenant/maintenance',
+  TENANT_DOCUMENTS: '/tenant/documents',
 };
 
-export const LOCAL_STORAGE_KEYS = {
-  TOKEN: 'token',
-  USER_INFO: 'user_info',
+export const ROLES = {
+  SUPER_ADMIN: 'super_admin',
+  HOST: 'host',
+  TENANT: 'tenant',
 };

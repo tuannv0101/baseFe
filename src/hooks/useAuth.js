@@ -11,10 +11,9 @@ export const useAuth = () => {
     if (token) {
       // Fetch user info with token
       // For now, just a placeholder
-      setLoading(false);
-    } else {
-      setLoading(false);
+      // For now, loading is always false on mount
     }
+    setLoading(false);
   }, [setUser]);
 
   return { user, isAuthenticated, loading, logout };
