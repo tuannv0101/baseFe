@@ -5,22 +5,17 @@ const useUserStore = create((set) => ({
   isAuthenticated: !!localStorage.getItem('token'),
   role: localStorage.getItem('role') || null,
   
-  login: (username, role) => {
-    // Mô phỏng login theo role
-    const mockUser = { 
-      username, 
-      role, 
-      email: `${username}@example.com`, 
-      id: Date.now(),
-      avatar: username.charAt(0).toUpperCase()
-    };
+  // Update login to accept real data from API
+  login: (userData, token) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('role', userData.role);
     
-    localStorage.setItem('token', 'mock-token-' + role);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    localStorage.setItem('role', role);
-    
-    set({ user: mockUser, isAuthenticated: true, role: role });
-    return true;
+    set({ 
+      user: userData, 
+      isAuthenticated: true, 
+      role: userData.role 
+    });
   },
 
   logout: () => {

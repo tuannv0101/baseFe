@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Paper, 
@@ -11,7 +11,7 @@ import {
   InputAdornment,
   IconButton,
   Alert,
-  Grid
+  CircularProgress
 } from '@mui/material';
 import { 
   AdminPanelSettings, 
@@ -21,54 +21,108 @@ import {
   VisibilityOff,
   Email,
   Lock,
-  Login as LoginIcon,
-  SupportAgent as SupportAgentIcon
+  Login as LoginIcon
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useUserStore from '../store/useUserStore';
 import { ROUTES, ROLES } from '../constants';
+import authService from '../services/authService';
 
-const DEMO_ACCOUNTS = [
-  { email: 'admin@system.com', role: ROLES.SUPER_ADMIN, label: 'Super Admin', icon: <AdminPanelSettings /> },
-  { email: 'lan.host@gmail.com', role: ROLES.HOST, label: 'Chủ trọ (Host)', icon: <HomeWork /> },
-  { email: 'tu.tenant@gmail.com', role: ROLES.TENANT, label: 'Người thuê (Tenant)', icon: <Person /> },
-];
+const ROLE_CONFIGS = {
+  [ROLES.SUPER_ADMIN]: {
+    title: 'Quản Trị Viên',
+    subtitle: 'Đăng nhập hệ thống quản trị',
+    icon: <AdminPanelSettings />,
+    color: '#1e3a8a',
+    bg: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+    demoEmail: 'admin'
+  },
+  [ROLES.HOST]: {
+    title: 'Chủ Trọ / Quản Lý',
+    subtitle: 'Quản lý tòa nhà và phòng trọ',
+    icon: <HomeWork />,
+    color: '#047857',
+    bg: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
+    demoEmail: 'host'
+  },
+  [ROLES.TENANT]: {
+    title: 'Khách Thuê',
+    subtitle: 'Xem thông tin phòng và hóa đơn',
+    icon: <Person />,
+    color: '#7c3aed',
+    bg: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
+    demoEmail: 'tenant'
+  }
+};
 
-const Login = () => {
+const Login = ({ forcedRole }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const login = useUserStore(state => state.login);
   
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  // Determine role strictly based on URL path
+  const getRoleFromPath = () => {
+    const path = location.pathname;
+    if (path.startsWith('/admin')) return ROLES.SUPER_ADMIN;
+    if (path.startsWith('/host')) return ROLES.HOST;
+    if (path.startsWith('/tenant')) return ROLES.TENANT;
+    return ROLES.TENANT; // Mặc định là khách thuê nếu vào đường dẫn /login chung
+  };
+
+  const currentRole = forcedRole || getRoleFromPath();
+  const config = ROLE_CONFIGS[currentRole];
+
+  useEffect(() => {
+    // Reset fields and set demo username based on role
+    setUsername(config.demoEmail);
+    setPassword('123456');
+    setError('');
+  }, [currentRole, config.demoEmail]);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    const account = DEMO_ACCOUNTS.find(acc => acc.email === email && password === '123456');
+    try {
+      // API payload matches AuthRequest class
+      const loginData = {
+        username: username,
+        password: password,
+        role: currentRole
+      };
 
-    if (account) {
-      const username = account.email.split('@')[0];
-      login(username, account.role);
+      const data = await authService.login(loginData);
+      
+      // Linh hoạt bóc tách dữ liệu từ API
+      const token = data.token || data.accessToken || data.data?.token;
+      const user = data.user || data.data?.user || { username: username, role: currentRole };
+      
+      if (!token) {
+        throw new Error('Không nhận được mã xác thực từ server');
+      }
+      
+      login(user, token);
       
       const targetRoute = {
         [ROLES.SUPER_ADMIN]: ROUTES.ADMIN_DASHBOARD,
         [ROLES.HOST]: ROUTES.HOST_DASHBOARD,
         [ROLES.TENANT]: ROUTES.TENANT_DASHBOARD,
-      }[account.role];
+      }[currentRole];
 
       navigate(targetRoute);
-    } else {
-      setError('Email hoặc mật khẩu không đúng (Gợi ý: MK là 123456)');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const fillDemo = (acc) => {
-    setEmail(acc.email);
-    setPassword('123456');
-    setError('');
   };
 
   return (
@@ -77,126 +131,96 @@ const Login = () => {
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-      p: 2
+      background: config.bg,
+      p: 2,
+      transition: 'all 0.5s ease'
     }}>
-      <Container maxWidth="lg">
-        <Grid container spacing={4} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <Paper elevation={12} sx={{ p: 4, borderRadius: 4 }}>
-              <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <Avatar sx={{ m: '0 auto 16px', bgcolor: 'primary.main', width: 56, height: 56 }}>
-                  <HomeWork />
-                </Avatar>
-                <Typography variant="h4" fontWeight={800} color="primary">
-                  Đăng Nhập
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Chào mừng bạn quay trở lại hệ thống!
-                </Typography>
-              </Box>
+      <Container maxWidth="sm">
+        <Paper elevation={12} sx={{ p: 4, borderRadius: 4 }}>
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Avatar sx={{ m: '0 auto 16px', bgcolor: config.color, width: 64, height: 64 }}>
+              {config.icon}
+            </Avatar>
+            <Typography variant="h4" fontWeight={800} sx={{ color: config.color }}>
+              {config.title}
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {config.subtitle}
+            </Typography>
+          </Box>
 
-              {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-              <form onSubmit={handleLogin}>
-                <Stack spacing={3}>
-                  <TextField
-                    fullWidth
-                    label="Địa chỉ Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Email color="action" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="Mật khẩu"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Lock color="action" />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                  <Button 
-                    type="submit" 
-                    fullWidth 
-                    variant="contained" 
-                    size="large" 
-                    sx={{ py: 1.5, fontWeight: 700 }}
-                    startIcon={<LoginIcon />}
-                  >
-                    Đăng Nhập
-                  </Button>
-                </Stack>
-              </form>
-            </Paper>
-          </Grid>
+          <form onSubmit={handleLogin}>
+            <Stack spacing={3}>
+              <TextField
+                fullWidth
+                label="Tên đăng nhập"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Person color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Mật khẩu"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton 
+                        onClick={() => setShowPassword(!showPassword)} 
+                        edge="end"
+                        disabled={loading}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Button 
+                type="submit" 
+                fullWidth 
+                variant="contained" 
+                size="large" 
+                disabled={loading}
+                sx={{ 
+                  py: 1.5, 
+                  fontWeight: 700,
+                  bgcolor: config.color,
+                  '&:hover': { bgcolor: config.color, filter: 'brightness(0.9)' }
+                }}
+                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <LoginIcon />}
+              >
+                {loading ? 'Đang đăng nhập...' : 'Đăng Nhập'}
+              </Button>
+            </Stack>
+          </form>
 
-          <Grid item xs={12} md={6}>
-            <Box sx={{ color: 'white' }}>
-              <Typography variant="h5" fontWeight={700} gutterBottom>
-                Tài khoản dùng thử (Demo)
-              </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.8, mb: 3 }}>
-                Click vào tài khoản dưới đây để tự động điền thông tin và trải nghiệm từng vai trò:
-              </Typography>
-
-              <Stack spacing={2}>
-                {DEMO_ACCOUNTS.map((acc) => (
-                  <Paper 
-                    key={acc.role}
-                    onClick={() => fillDemo(acc)}
-                    sx={{ 
-                      p: 2, 
-                      borderRadius: 3, 
-                      cursor: 'pointer',
-                      bgcolor: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      transition: 'all 0.3s',
-                      '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.2)',
-                        transform: 'translateX(10px)',
-                        borderColor: 'white'
-                      }
-                    }}
-                  >
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Avatar sx={{ bgcolor: 'white', color: 'primary.main' }}>
-                        {acc.icon}
-                      </Avatar>
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={700}>
-                          {acc.label}
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.7 }}>
-                          Email: {acc.email} | MK: 123456
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </Paper>
-                ))}
-              </Stack>
-            </Box>
-          </Grid>
-        </Grid>
+          <Box sx={{ mt: 4, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Bạn vào nhầm trang? <br />
+              <Button size="small" onClick={() => navigate(ROUTES.LOGIN_ADMIN)}>Admin</Button>
+              <Button size="small" onClick={() => navigate(ROUTES.LOGIN_HOST)}>Chủ trọ</Button>
+              <Button size="small" onClick={() => navigate(ROUTES.LOGIN_TENANT)}>Khách thuê</Button>
+            </Typography>
+          </Box>
+        </Paper>
       </Container>
     </Box>
   );

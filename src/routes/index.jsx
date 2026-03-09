@@ -13,11 +13,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, role } = useUserStore();
   
   if (!isAuthenticated) {
+    // Redirect to relevant login page based on path if possible, or default login
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
-    // Redirect to their own dashboard if role not allowed
     const dashboardMap = {
       [ROLES.SUPER_ADMIN]: ROUTES.ADMIN_DASHBOARD,
       [ROLES.HOST]: ROUTES.HOST_DASHBOARD,
@@ -32,63 +32,75 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 const AppRoutes = () => {
   return (
     <Router>
-      <MainLayout>
-        <Routes>
-          <Route path={ROUTES.LOGIN} element={<Login />} />
-          
-          {/* Default redirect based on role or to login */}
-          <Route path="/" element={<Navigate to={ROUTES.LOGIN} replace />} />
+      <Routes>
+        {/* Public Routes (Without MainLayout) */}
+        <Route path={ROUTES.LOGIN} element={<Login />} />
+        <Route path={ROUTES.LOGIN_ADMIN} element={<Login forcedRole={ROLES.SUPER_ADMIN} />} />
+        <Route path={ROUTES.LOGIN_HOST} element={<Login forcedRole={ROLES.HOST} />} />
+        <Route path={ROUTES.LOGIN_TENANT} element={<Login forcedRole={ROLES.TENANT} />} />
+        
+        {/* Protected Routes (With MainLayout) */}
+        <Route path="/" element={
+          <MainLayout>
+            <Navigate to={ROUTES.LOGIN} replace />
+          </MainLayout>
+        } />
 
-          {/* Super Admin Routes */}
-          <Route path={ROUTES.ADMIN_DASHBOARD} element={
-            <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path={ROUTES.ADMIN_HOSTS} element={
-            <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+        <Route path={ROUTES.ADMIN_DASHBOARD} element={
+          <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <MainLayout><AdminDashboard /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.ADMIN_HOSTS} element={
+          <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <MainLayout>
               <PlaceholderPage title="Quản lý Chủ trọ" breadcrumbs={[{label: 'Admin'}, {label: 'Chủ trọ'}]} />
-            </ProtectedRoute>
-          } />
-          <Route path={ROUTES.ADMIN_SUBSCRIPTIONS} element={
-            <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.ADMIN_SUBSCRIPTIONS} element={
+          <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <MainLayout>
               <PlaceholderPage title="Gói dịch vụ" breadcrumbs={[{label: 'Admin'}, {label: 'Gói dịch vụ'}]} />
-            </ProtectedRoute>
-          } />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
 
-          {/* Host Routes */}
-          <Route path={ROUTES.HOST_DASHBOARD} element={
-            <ProtectedRoute allowedRoles={[ROLES.HOST]}>
-              <HostDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path={ROUTES.HOST_ROOMS} element={
-            <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+        <Route path={ROUTES.HOST_DASHBOARD} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout><HostDashboard /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_ROOMS} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
               <PlaceholderPage title="Tòa nhà & Phòng" breadcrumbs={[{label: 'Host'}, {label: 'Tòa nhà'}]} />
-            </ProtectedRoute>
-          } />
-          <Route path={ROUTES.HOST_TENANTS} element={
-            <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_TENANTS} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
               <PlaceholderPage title="Khách thuê" breadcrumbs={[{label: 'Host'}, {label: 'Khách thuê'}]} />
-            </ProtectedRoute>
-          } />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
 
-          {/* Tenant Routes */}
-          <Route path={ROUTES.TENANT_DASHBOARD} element={
-            <ProtectedRoute allowedRoles={[ROLES.TENANT]}>
-              <TenantDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path={ROUTES.TENANT_INVOICES} element={
-            <ProtectedRoute allowedRoles={[ROLES.TENANT]}>
+        <Route path={ROUTES.TENANT_DASHBOARD} element={
+          <ProtectedRoute allowedRoles={[ROLES.TENANT]}>
+            <MainLayout><TenantDashboard /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.TENANT_INVOICES} element={
+          <ProtectedRoute allowedRoles={[ROLES.TENANT]}>
+            <MainLayout>
               <PlaceholderPage title="Hóa đơn của tôi" breadcrumbs={[{label: 'Cư dân'}, {label: 'Hóa đơn'}]} />
-            </ProtectedRoute>
-          } />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
 
-          {/* Catch all fallback */}
-          <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
-        </Routes>
-      </MainLayout>
+        <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
+      </Routes>
     </Router>
   );
 };

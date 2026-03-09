@@ -1,5 +1,8 @@
 export const ROUTES = {
   LOGIN: '/login',
+  LOGIN_ADMIN: '/admin/login',
+  LOGIN_HOST: '/host/login',
+  LOGIN_TENANT: '/tenant/login',
   
   // Super Admin
   ADMIN_DASHBOARD: '/admin',
@@ -24,7 +27,7 @@ export const ROUTES = {
 };
 
 export const ROLES = {
-  SUPER_ADMIN: 'super_admin',
-  HOST: 'host',
-  TENANT: 'tenant',
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  HOST: 'HOST',
+  TENANT: 'TENANT',
 };
