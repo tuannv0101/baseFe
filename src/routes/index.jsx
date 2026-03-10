@@ -4,6 +4,9 @@ import MainLayout from '../layouts/MainLayout';
 import Login from '../pages/Login';
 import AdminDashboard from '../pages/AdminDashboard';
 import HostDashboard from '../pages/HostDashboard';
+import RoomMatrix from '../pages/RoomMatrix';
+import Tenants from '../pages/Tenants';
+import Services from '../pages/Services';
 import TenantDashboard from '../pages/TenantDashboard';
 import PlaceholderPage from '../pages/PlaceholderPage';
 import { ROUTES, ROLES } from '../constants';
@@ -74,14 +77,21 @@ const AppRoutes = () => {
         <Route path={ROUTES.HOST_ROOMS} element={
           <ProtectedRoute allowedRoles={[ROLES.HOST]}>
             <MainLayout>
-              <PlaceholderPage title="Tòa nhà & Phòng" breadcrumbs={[{label: 'Host'}, {label: 'Tòa nhà'}]} />
+              <RoomMatrix />
             </MainLayout>
           </ProtectedRoute>
         } />
         <Route path={ROUTES.HOST_TENANTS} element={
           <ProtectedRoute allowedRoles={[ROLES.HOST]}>
             <MainLayout>
-              <PlaceholderPage title="Khách thuê" breadcrumbs={[{label: 'Host'}, {label: 'Khách thuê'}]} />
+              <Tenants />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_SERVICES} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <Services />
             </MainLayout>
           </ProtectedRoute>
         } />
