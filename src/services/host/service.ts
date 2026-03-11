@@ -1,17 +1,20 @@
 import axiosInstance from '../../api/axios';
+import { propertyManagementService } from './propertyManagement';
 
 const hostService = {
-  // Ví dụ: Lấy danh sách tòa nhà/phòng
   getRooms: async () => {
     const response = await axiosInstance.get('/api/v1/host/rooms');
     return response.data;
   },
-  
-  // Ví dụ: Quản lý khách thuê
+
   getTenants: async () => {
     const response = await axiosInstance.get('/api/v1/host/tenants');
     return response.data;
-  }
+  },
+
+  // Wrapper để giữ tương thích; nên dùng propertyManagementService trực tiếp.
+  getProperties: propertyManagementService.getProperties,
 };
 
 export default hostService;
+

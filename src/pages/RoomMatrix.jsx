@@ -140,7 +140,7 @@ const RoomMatrix = () => {
       <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
         {/* Always Visible: Main Search Fields */}
         <Grid container spacing={2} alignItems="center" columns={12}>
-          <Grid item size={6} sm={4} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 6 }}>
             <TextField
               fullWidth
               size="small"
@@ -153,7 +153,7 @@ const RoomMatrix = () => {
               }}
             />
           </Grid>
-          <Grid item size={5} sm={4} md={4}>
+          <Grid size={{ xs: 12, sm: 5, md: 5 }}>
             <TextField
               fullWidth
               size="small"
@@ -166,21 +166,22 @@ const RoomMatrix = () => {
               }}
             />
           </Grid>
-          <Grid item size={1} sm={4} md={4}>
-            <Tooltip title="Bộ lọc nâng cao">
-                <IconButton 
-                  color={showFilters ? 'primary' : 'default'} 
-                  onClick={() => setShowFilters(!showFilters)}
-                  sx={{ border: '1px solid', borderColor: 'divider' }}
-                >
-                  <FilterList fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          <Collapse in={showFilters}>
-            <Box size={12} sx={{ mt: 2 }}>
+          <Grid size={{ xs: 12, sm: 1, md: 1 }}>
+          <Tooltip title="Bộ lọc nâng cao">
+              <IconButton 
+                color={showFilters ? 'primary' : 'default'} 
+                onClick={() => setShowFilters(!showFilters)}
+                sx={{ border: '1px solid', borderColor: 'divider' }}
+              >
+                <FilterList fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Grid>
+          <Grid size={12}>
+            <Collapse in={showFilters}>
+              <Box sx={{ pt: 2 }}>
               <Grid container spacing={2}>
-                <Grid item size={3} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -196,7 +197,7 @@ const RoomMatrix = () => {
                     <MenuItem value="Bảo trì">Bảo trì</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid item size={3} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -213,7 +214,7 @@ const RoomMatrix = () => {
                     <MenuItem value="Penthouse">Penthouse</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid item size={3} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -229,7 +230,7 @@ const RoomMatrix = () => {
                     <MenuItem value="maintenance">Bảo trì</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid item size={3} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3}}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       fullWidth
@@ -252,9 +253,10 @@ const RoomMatrix = () => {
                   </Stack>
                 </Grid>
               </Grid>
-            </Box>
-        </Collapse>
-          <Grid item size={12} sm={4} md={4}>
+              </Box>
+            </Collapse>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 12, md: 12 }}>
             <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
               <Button 
                 variant="contained" 
@@ -277,8 +279,6 @@ const RoomMatrix = () => {
             </Box>
           </Grid>
         </Grid>
-
-        {/* Toggled Area: Selects & Price Range */}
       </Paper>
 
       {/* List Table Section */}

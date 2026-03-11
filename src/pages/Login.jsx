@@ -26,7 +26,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import useUserStore from '../store/useUserStore';
 import { ROUTES, ROLES } from '../constants';
-import authService from '../services/authService';
+import authService from '../services/auth';
 
 const ROLE_CONFIGS = {
   [ROLES.SUPER_ADMIN]: {
