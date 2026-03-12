@@ -14,6 +14,8 @@ export const ROUTES = {
   // Landlord/Host
   HOST_DASHBOARD: '/host',
   HOST_ROOMS: '/host/rooms',
+  HOST_ROOM_DETAIL: '/host/rooms/:id',
+  HOST_ROOM_EDIT: '/host/rooms/:id/edit',
   HOST_TENANTS: '/host/tenants',
   HOST_FINANCE: '/host/finance',
   HOST_STAFF: '/host/staff',

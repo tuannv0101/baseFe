@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Grid,
   Paper,
@@ -20,7 +21,6 @@ import {
   Collapse,
   Button,
   Tooltip,
-  Divider,
 } from '@mui/material';
 import {
   Search,
@@ -32,6 +32,7 @@ import {
   RestartAlt,
 } from '@mui/icons-material';
 import PageHeader from '../components/common/PageHeader';
+import { ROUTES } from '../constants';
 
 // Enhanced mock data
 const initialRooms = [
@@ -59,6 +60,7 @@ const statusConfig = {
 };
 
 const RoomMatrix = () => {
+  const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [showFilters, setShowFilters] = useState(false);
@@ -127,6 +129,11 @@ const RoomMatrix = () => {
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+  };
+
+  const handleOpenDetail = (roomId) => {
+    const targetPath = ROUTES.HOST_ROOM_DETAIL.replace(':id', roomId);
+    navigate(targetPath);
   };
 
   return (
@@ -333,19 +340,20 @@ const RoomMatrix = () => {
                   </TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                      <Tooltip title="Xem chi tiết"><IconButton size="small"><Visibility fontSize="small" /></IconButton></Tooltip>
-                      <Tooltip title="Chỉnh sửa"><IconButton size="small" color="info"><Edit fontSize="small" /></IconButton></Tooltip>
+                      <Tooltip title="Xem chi tiết">
+                        <IconButton size="small" onClick={() => handleOpenDetail(room.id)}>
+                          <Visibility fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Chỉnh sửa">
+                        <IconButton size="small" color="info" onClick={() => navigate(ROUTES.HOST_ROOM_EDIT.replace(":id", room.id))}>
+                          <Edit fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
                   </TableCell>
                 </TableRow>
               ))}
-            {filteredRooms.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
-                  <Typography variant="body1" color="text.secondary">Không tìm thấy phòng nào phù hợp với bộ lọc</Typography>
-                </TableCell>
-              </TableRow>
-            )}
           </TableBody>
         </Table>
         <TablePagination
