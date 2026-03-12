@@ -20,6 +20,8 @@ export const ROUTES = {
   HOST_FINANCE: '/host/finance',
   HOST_STAFF: '/host/staff',
   HOST_SERVICES: '/host/services',
+  HOST_CONTRACTS: '/host/contracts',
+  HOST_CONTRACT_CREATE: '/host/contracts/create',
 
   // Tenant
   TENANT_DASHBOARD: '/tenant',

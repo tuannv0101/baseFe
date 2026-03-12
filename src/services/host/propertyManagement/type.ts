@@ -3,3 +3,13 @@ export type LoginCredentials = {
   password: string;
   role?: string;
 };
+export type RoomResDTO = {
+  id: string;
+  roomNumber: string;
+  propertyName?: string;
+  typeRoom?: string;
+  price?: string;
+  tenantName?: string;
+  tenantIdCardNumber?: string;
+  statusRoom?: string;
+};

@@ -7,6 +7,8 @@ import HostDashboard from '../pages/HostDashboard';
 import RoomMatrix from '../pages/RoomMatrix';
 import RoomDetail from '../pages/RoomDetail';
 import RoomEdit from '../pages/RoomEdit';
+import HostContracts from '../pages/HostContracts';
+import HostContractCreate from '../pages/HostContractCreate';
 import Tenants from '../pages/Tenants';
 import Services from '../pages/Services';
 import TenantDashboard from '../pages/TenantDashboard';
@@ -108,6 +110,20 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={[ROLES.HOST]}>
             <MainLayout>
               <Services />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_CONTRACTS} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <HostContracts />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_CONTRACT_CREATE} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <HostContractCreate />
             </MainLayout>
           </ProtectedRoute>
         } />

@@ -59,6 +59,7 @@ const getMenuItems = (role) => {
         { title: 'Tổng quan Host', icon: <DashboardIcon />, path: ROUTES.HOST_DASHBOARD },
         { title: 'Tòa nhà & Phòng', icon: <HomeWorkIcon />, path: ROUTES.HOST_ROOMS },
         { title: 'Khách thuê', icon: <PeopleIcon />, path: ROUTES.HOST_TENANTS },
+        { title: 'Hop dong thue', icon: <DescriptionIcon />, path: ROUTES.HOST_CONTRACTS },
         { title: 'Dịch vụ & Tiện ích', icon: <BuildIcon />, path: ROUTES.HOST_SERVICES },
         { title: 'Tài chính', icon: <Payment />, path: ROUTES.HOST_FINANCE },
         { title: 'Nhân viên', icon: <Engineering />, path: ROUTES.HOST_STAFF },
