@@ -12,9 +12,9 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from '../components/common/PageHeader';
-import { ROUTES } from '../constants';
-import propertyManagementService from '../services/host/propertyManagement/service';
+import PageHeader from '../../components/common/PageHeader';
+import { ROUTES } from '../../constants';
+import propertyManagementService from '../../services/host/propertyManagement/service';
 
 const initialForm = {
   propertyId: '',
@@ -120,8 +120,8 @@ const HostContractCreate = () => {
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Them hop dong"
-        breadcrumbs={[{ label: 'Chu tro' }, { label: 'Hop dong thue' }, { label: 'Them hop dong' }]}
+        title="Thêm hợp đồng"
+        breadcrumbs={[{ label: 'Chủ trọ' }, { label: 'Hợp đồng thuê' }, { label: 'Thêm hợp đồng' }]}
       />
 
       <Paper sx={{ p: 2.5, borderRadius: 2 }}>
@@ -143,7 +143,7 @@ const HostContractCreate = () => {
               ))}
             </TextField>
             <TextField
-              label="Phong"
+              label="Phòng"
               name="roomId"
               select
               value={form.roomId}
@@ -151,7 +151,7 @@ const HostContractCreate = () => {
               fullWidth
               disabled={!form.propertyId || loadingRooms}
             >
-              <MenuItem value="">{loadingRooms ? 'Dang tai phong...' : 'Chon phong'}</MenuItem>
+              <MenuItem value="">{loadingRooms ? 'Dang tai Phòng...' : 'Chon Phòng'}</MenuItem>
               {rooms.map((room) => {
                 const roomValue = room.roomId ?? room.id;
                 const roomLabel = room.roomNumber || room.roomNo || room.code || room.roomId || room.id;
@@ -163,7 +163,7 @@ const HostContractCreate = () => {
               })}
             </TextField>
             <TextField
-              label="Nguoi thue"
+              label="Người đại diện"
               name="tenantName"
               value={form.tenantName}
               onChange={handleChange}
@@ -177,19 +177,19 @@ const HostContractCreate = () => {
               fullWidth
             />
             <DatePicker
-              label="Bat dau"
+              label="Bắt đầu"
               value={form.startDate ? dayjs(form.startDate) : null}
               onChange={(value) => setForm(prev => ({ ...prev, startDate: value }))}
               slotProps={{ textField: { fullWidth: true } }}
             />
             <DatePicker
-              label="Ket thuc"
+              label="Kết thúc"
               value={form.endDate ? dayjs(form.endDate) : null}
               onChange={(value) => setForm(prev => ({ ...prev, endDate: value }))}
               slotProps={{ textField: { fullWidth: true } }}
             />
             <TextField
-              label="Tien thue"
+              label="Tiền thuê"
               name="rent"
               type="number"
               value={form.rent}
@@ -197,7 +197,7 @@ const HostContractCreate = () => {
               fullWidth
             />
             <TextField
-              label="Tien coc"
+              label="Tiền cọc"
               name="deposit"
               type="number"
               value={form.deposit}
@@ -205,7 +205,7 @@ const HostContractCreate = () => {
               fullWidth
             />
             <TextField
-              label="Trang thai"
+              label="Trạng thái"
               name="status"
               select
               value={form.status}
@@ -243,7 +243,7 @@ const HostContractCreate = () => {
 
         <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 3 }}>
           <Button variant="outlined" onClick={handleCancel}>Quay lai</Button>
-          <Button variant="contained" onClick={handleSave} disabled={loadingProps}>Luu</Button>
+          <Button variant="contained" onClick={handleSave} disabled={loadingProps}>Lưu</Button>
         </Stack>
       </Paper>
     </Box>

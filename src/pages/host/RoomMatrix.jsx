@@ -31,8 +31,8 @@ import {
   Edit,
   RestartAlt,
 } from '@mui/icons-material';
-import PageHeader from '../components/common/PageHeader';
-import { ROUTES } from '../constants';
+import PageHeader from '../../components/common/PageHeader';
+import { ROUTES } from '../../constants';
 
 // Enhanced mock data
 const initialRooms = [

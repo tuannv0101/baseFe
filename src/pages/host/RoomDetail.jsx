@@ -16,8 +16,8 @@ import {
   Tabs,
   Tab,
 } from '@mui/material';
-import PageHeader from '../components/common/PageHeader';
-import { ROUTES } from '../constants';
+import PageHeader from '../../components/common/PageHeader';
+import { ROUTES } from '../../constants';
 
 const roomDetailMock = {
   roomId: 13,
@@ -148,7 +148,7 @@ const RoomDetail = () => {
         <Divider sx={{ my: 2 }} />
 
         <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 1 }}>
-          <Tab label="Danh sach tien nghi" />
+          <Tab label="Danh sach tiện nghi" />
           <Tab label="Gia dich vu chung" />
         </Tabs>
 
@@ -159,7 +159,7 @@ const RoomDetail = () => {
                 <TableCell sx={{ fontWeight: 700 }}>Tai san</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Hang</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Serial</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Trang thai</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

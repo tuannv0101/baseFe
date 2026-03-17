@@ -2,16 +2,18 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import Login from '../pages/Login';
-import AdminDashboard from '../pages/AdminDashboard';
-import HostDashboard from '../pages/HostDashboard';
-import RoomMatrix from '../pages/RoomMatrix';
-import RoomDetail from '../pages/RoomDetail';
-import RoomEdit from '../pages/RoomEdit';
-import HostContracts from '../pages/HostContracts';
-import HostContractCreate from '../pages/HostContractCreate';
-import Tenants from '../pages/Tenants';
+import AdminDashboard from '../pages/admin/AdminDashboard';
+import HostDashboard from '../pages/host/HostDashboard';
+import RoomMatrix from '../pages/host/RoomMatrix';
+import RoomDetail from '../pages/host/RoomDetail';
+import RoomEdit from '../pages/host/RoomEdit';
+import HostContracts from '../pages/host/HostContracts';
+import HostContractCreate from '../pages/host/HostContractCreate';
+import Tenants from '../pages/tenant/Tenants';
+import TenantDetail from '../pages/tenant/TenantDetail';
+import TenantEdit from '../pages/tenant/TenantEdit';
 import Services from '../pages/Services';
-import TenantDashboard from '../pages/TenantDashboard';
+import TenantDashboard from '../pages/tenant/TenantDashboard';
 import PlaceholderPage from '../pages/PlaceholderPage';
 import { ROUTES, ROLES } from '../constants';
 import useUserStore from '../store/useUserStore';
@@ -103,6 +105,27 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={[ROLES.HOST]}>
             <MainLayout>
               <Tenants />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_TENANT_CREATE} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <TenantEdit isCreate={true} />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_TENANT_DETAIL} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <TenantDetail />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_TENANT_EDIT} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <TenantEdit />
             </MainLayout>
           </ProtectedRoute>
         } />

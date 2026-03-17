@@ -23,8 +23,8 @@ import {
   Chip,
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
-import PageHeader from '../components/common/PageHeader';
-import { ROUTES } from '../constants';
+import PageHeader from '../../components/common/PageHeader';
+import { ROUTES } from '../../constants';
 
 const initialContracts = [
   {
@@ -139,27 +139,27 @@ const HostContracts = () => {
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Hop dong thue"
-        breadcrumbs={[{ label: 'Chu tro' }, { label: 'Hop dong thue' }]}
+        title="Hợp đồng thuê"
+        breadcrumbs={[{ label: 'Chủ trọ' }, { label: 'Hợp đồng thuê' }]}
       />
 
       <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
-        <Button variant="contained" startIcon={<Add />} onClick={handleOpenCreate}>Them hop dong</Button>
+        <Button variant="contained" startIcon={<Add />} onClick={handleOpenCreate}>Thêm hợp đồng</Button>
       </Stack>
 
       <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 16px 0 rgba(0,0,0,0.08)' }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Ma HD</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Phong</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Nguoi thue</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Mã HĐ</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Phòng</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Người thuê</TableCell>
               <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>CCCD/CMND</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Bat dau</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Ket thuc</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Tien thue</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Trang thai</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }} align="right">Thao tac</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Bắt đầu</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Kết thúc</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Tiền thuê</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Trạng thái</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }} align="right">Thao tác</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -209,30 +209,30 @@ const HostContracts = () => {
             setRowsPerPage(parseInt(event.target.value, 10));
             setPage(0);
           }}
-          labelRowsPerPage="So dong moi trang:"
+          labelRowsPerPage="Số dòng mỗi trang:"
         />
       </TableContainer>
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>{form.id ? 'Chinh sua hop dong' : 'Them hop dong'}</DialogTitle>
+        <DialogTitle>{form.id ? 'Chỉnh sửa hop dong' : 'Thêm hợp đồng'}</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField
-              label="Ma hop dong"
+              label="Mã hợp đồng"
               name="contractCode"
               value={form.contractCode}
               onChange={handleChange}
               fullWidth
             />
             <TextField
-              label="Phong"
+              label="Phòng"
               name="roomNumber"
               value={form.roomNumber}
               onChange={handleChange}
               fullWidth
             />
             <TextField
-              label="Nguoi thue"
+              label="Người thuê"
               name="tenantName"
               value={form.tenantName}
               onChange={handleChange}
@@ -246,7 +246,7 @@ const HostContracts = () => {
               fullWidth
             />
             <TextField
-              label="Bat dau"
+              label="Bắt đầu"
               name="startDate"
               type="date"
               value={form.startDate}
@@ -255,7 +255,7 @@ const HostContracts = () => {
               InputLabelProps={{ shrink: true }}
             />
             <TextField
-              label="Ket thuc"
+              label="Kết thúc"
               name="endDate"
               type="date"
               value={form.endDate}
@@ -264,7 +264,7 @@ const HostContracts = () => {
               InputLabelProps={{ shrink: true }}
             />
             <TextField
-              label="Tien thue"
+              label="Tiền thuê"
               name="rent"
               type="number"
               value={form.rent}
@@ -272,7 +272,7 @@ const HostContracts = () => {
               fullWidth
             />
             <TextField
-              label="Tien coc"
+              label="Tiền cọc"
               name="deposit"
               type="number"
               value={form.deposit}
@@ -280,7 +280,7 @@ const HostContracts = () => {
               fullWidth
             />
             <TextField
-              label="Trang thai"
+              label="Trạng thái"
               name="status"
               select
               value={form.status}
@@ -294,8 +294,8 @@ const HostContracts = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Huy</Button>
-          <Button variant="contained" onClick={handleSave}>Luu</Button>
+          <Button onClick={handleCloseDialog}>Hủy</Button>
+          <Button variant="contained" onClick={handleSave}>Lưu</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -13,3 +13,13 @@ export type RoomResDTO = {
   tenantIdCardNumber?: string;
   statusRoom?: string;
 };
+export type GetPropertiesParams = {
+  nameProperty?: string;
+  tenantName?: string;
+  statusRoom?: string;
+  priceRoom?: string;
+  typeRoom?: string;
+  page?: number;
+  size?: number;
+  search?: string;
+};

@@ -1,5 +1,5 @@
 import axiosInstance from '../../../api/axios';
-import type { GetPropertiesParams, GetPropertiesResponse } from './type';
+import type { GetPropertiesParams, RoomResDTO } from './type';
 
 const cleanParams = (params: Record<string, unknown>) => {
   const cleaned: Record<string, unknown> = {};
@@ -13,14 +13,14 @@ const cleanParams = (params: Record<string, unknown>) => {
 
 const propertyManagementService = {
   // GET /api/v1/host/property-management/properties?page=&size=&search=
-  getProperties: async (params: GetPropertiesParams = {}): Promise<GetPropertiesResponse> => {
+  getProperties: async (params: GetPropertiesParams = {}): Promise<RoomResDTO> => {
     const { page = 0, size = 10, search, ...rest } = params;
     const query = cleanParams({ page, size, search, ...rest });
     const response = await axiosInstance.get('/api/v1/host/property-management/properties', { params: query });
     return response.data;
   },
 
-  getAllProperties: async (): Promise<GetPropertiesResponse> => {
+  getAllProperties: async (): Promise<RoomResDTO> => {
     const response = await axiosInstance.get('/api/v1/host/property-management/properties/all');
     return response.data;
   },

@@ -24,9 +24,9 @@ import {
   DialogActions,
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
-import PageHeader from '../components/common/PageHeader';
-import { ROUTES } from '../constants';
-import hostService from '../services/host/service';
+import PageHeader from '../../components/common/PageHeader';
+import { ROUTES } from '../../constants';
+import hostService from '../../services/host/service';
 
 const roomDetailMock = {
   roomId: 13,
@@ -134,11 +134,11 @@ const RoomEdit = () => {
           setForm(prev => ({ ...prev, tenantFullName, tenantId, contactPhone }));
           setLookup({ loading: false, error: '' });
         } else {
-          setLookup({ loading: false, error: "Khong tim thay nguoi thue" });
+          setLookup({ loading: false, error: "Khong tim thay Người thuê" });
         }
       } catch (error) {
         if (!active) return;
-        setLookup({ loading: false, error: "Khong tim thay nguoi thue" });
+        setLookup({ loading: false, error: "Khong tim thay Người thuê" });
       }
     }, 400);
 
@@ -233,8 +233,8 @@ const RoomEdit = () => {
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Chinh sua phong"
-        breadcrumbs={[{ label: 'Quan ly Tai san' }, { label: 'Danh sach Phong' }, { label: form.roomNumber }, { label: 'Chinh sua' }]}
+        title="Chỉnh sửa Phòng"
+        breadcrumbs={[{ label: 'Quan ly Tai san' }, { label: 'Danh sach Phòng' }, { label: form.roomNumber }, { label: 'Chỉnh sửa' }]}
       />
 
       <Paper sx={{ p: 2.5, borderRadius: 2 }}>
@@ -242,7 +242,7 @@ const RoomEdit = () => {
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              label="Ma phong"
+              label="Ma Phòng"
               value={form.roomId}
               disabled
             />
@@ -250,7 +250,7 @@ const RoomEdit = () => {
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              label="Phong"
+              label="Phòng"
               name="roomNumber"
               value={form.roomNumber}
               onChange={handleChange}
@@ -288,7 +288,7 @@ const RoomEdit = () => {
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              label="Nguoi thue"
+              label="Người thuê"
               name="tenantFullName"
               value={form.tenantFullName || ''}
               onChange={handleChange}
@@ -310,7 +310,7 @@ const RoomEdit = () => {
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              label="Loai phong"
+              label="Loai Phòng"
               name="type"
               select
               value={form.type}
@@ -324,7 +324,7 @@ const RoomEdit = () => {
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              label="Trang thai"
+              label="Trạng thái"
               name="status"
               select
               value={form.status}
@@ -350,7 +350,7 @@ const RoomEdit = () => {
         <Divider sx={{ my: 2 }} />
 
         <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 1 }}>
-          <Tab label="Danh sach tien nghi" />
+          <Tab label="Danh sach tiện nghi" />
           <Tab label="Gia dich vu chung" />
         </Tabs>
 
@@ -358,7 +358,7 @@ const RoomEdit = () => {
           <>
             <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
               <Button variant="outlined" startIcon={<Add />} onClick={handleOpenAddAsset}>
-                Them tien nghi
+                Thêm tiện nghi
               </Button>
             </Stack>
             <Table size="small">
@@ -367,8 +367,8 @@ const RoomEdit = () => {
                   <TableCell sx={{ fontWeight: 700 }}>Tai san</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Hang</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Serial</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Trang thai</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="right">Thao tac</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">Thao tác</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -416,12 +416,12 @@ const RoomEdit = () => {
 
         <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 2 }}>
           <Button variant="outlined" onClick={handleCancel}>Quay lai</Button>
-          <Button variant="contained" onClick={handleSave}>Luu</Button>
+          <Button variant="contained" onClick={handleSave}>Lưu</Button>
         </Stack>
       </Paper>
 
       <Dialog open={assetDialogOpen} onClose={handleCloseAddAsset} maxWidth="sm" fullWidth>
-        <DialogTitle>{editingAssetId ? 'Chinh sua tien nghi' : 'Them tien nghi'}</DialogTitle>
+        <DialogTitle>{editingAssetId ? 'Chỉnh sửa tiện nghi' : 'Thêm tiện nghi'}</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12 }}>
@@ -454,7 +454,7 @@ const RoomEdit = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
-                label="Trang thai"
+                label="Trạng thái"
                 name="status"
                 select
                 value={assetDraft.status}
@@ -468,9 +468,9 @@ const RoomEdit = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseAddAsset}>Huy</Button>
+          <Button onClick={handleCloseAddAsset}>Hủy</Button>
           <Button variant="contained" onClick={handleSubmitAsset}>
-            {editingAssetId ? 'Luu' : 'Them'}
+            {editingAssetId ? 'Lưu' : 'Thêm'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -8,7 +8,7 @@ const hostService = {
   },
 
   getTenants: async () => {
-    const response = await axiosInstance.get('/api/v1/host/tenants');
+    const response = await axiosInstance.get('/api/v1/host/tenancy/tenants');
     return response.data;
   },
 
