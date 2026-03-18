@@ -7,6 +7,9 @@ import {
   MenuItem,
   Stack,
   Typography,
+  Grid,
+  Divider,
+  Chip,
 } from '@mui/material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -15,10 +18,14 @@ import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/common/PageHeader';
 import { ROUTES } from '../../constants';
 import propertyManagementService from '../../services/host/propertyManagement/service';
+import tenantManagementService from '../../services/host/tenantManagement/service';
+import { contractManagementService } from '../../services/host/contractManagement';
+import fileService from '../../services/fileService';
 
 const initialForm = {
   propertyId: '',
   roomId: '',
+  tenantId: '',
   tenantName: '',
   idCardNumber: '',
   startDate: null,
@@ -27,6 +34,12 @@ const initialForm = {
   deposit: '',
   status: 'ACTIVE',
   contractFiles: [],
+};
+
+const statusConfig = {
+  'AVAILABLE': 'Trống',
+  'OCCUPIED': 'Đang thuê',
+  'MAINTENANCE': 'Bảo trì',
 };
 
 const normalizeList = (response) => {
@@ -47,20 +60,31 @@ const HostContractCreate = () => {
   const [form, setForm] = useState(initialForm);
   const [properties, setProperties] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [tenants, setTenants] = useState([]);
   const [loadingProps, setLoadingProps] = useState(false);
   const [loadingRooms, setLoadingRooms] = useState(false);
+  const [loadingTenants, setLoadingTenants] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const loadProperties = async () => {
+    const loadInitialData = async () => {
       try {
         setLoadingProps(true);
-        const response = await propertyManagementService.getAllProperties();
-        setProperties(normalizeList(response));
+        setLoadingTenants(true);
+        const [propsRes, tenantsRes] = await Promise.all([
+          propertyManagementService.getAllProperties(),
+          tenantManagementService.getTenants({ size: 9999 })
+        ]);
+        setProperties(normalizeList(propsRes));
+        setTenants(normalizeList(tenantsRes));
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu ban đầu:', error);
       } finally {
         setLoadingProps(false);
+        setLoadingTenants(false);
       }
     };
-    loadProperties();
+    loadInitialData();
   }, []);
 
   const handleChange = (e) => {
@@ -77,11 +101,24 @@ const HostContractCreate = () => {
     try {
       setLoadingRooms(true);
       const response = await propertyManagementService.getRoomMatrix(propertyId);
-      console.log(response);
-      
       setRooms(normalizeList(response));
     } finally {
       setLoadingRooms(false);
+    }
+  };
+
+  const handleTenantChange = (e) => {
+    const tenantId = e.target.value;
+    const selectedTenant = tenants.find(t => t.id === tenantId);
+    if (selectedTenant) {
+      setForm(prev => ({ 
+        ...prev, 
+        tenantId, 
+        tenantName: selectedTenant.fullName,
+        idCardNumber: selectedTenant.idCardNumber || ''
+      }));
+    } else {
+      setForm(prev => ({ ...prev, tenantId: '', tenantName: '', idCardNumber: '' }));
     }
   };
 
@@ -112,138 +149,257 @@ const HostContractCreate = () => {
     navigate(ROUTES.HOST_CONTRACTS);
   };
 
-  const handleSave = () => {
-    // TODO: call API create and upload file
-    navigate(ROUTES.HOST_CONTRACTS);
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      
+      // 1. Upload all files first to get metadata IDs
+      const uploadedFileIds = [];
+      if (form.contractFiles && form.contractFiles.length > 0) {
+        for (const file of form.contractFiles) {
+          try {
+            const res = await fileService.upload(file);
+            const fileId = res?.data?.id ?? res?.id;
+            if (fileId) uploadedFileIds.push(fileId);
+          } catch (uploadError) {
+            console.error(`Lỗi khi tải lên file ${file.name}:`, uploadError);
+          }
+        }
+      }
+
+      // 2. Prepare payload with uploaded file IDs
+      const payload = {
+        propertyId: form.propertyId,
+        roomId: form.roomId,
+        tenantId: form.tenantId,
+        tenantName: form.tenantName,
+        idCardNumber: form.idCardNumber,
+        rent: Number(form.rent),
+        deposit: Number(form.deposit),
+        status: form.status,
+        startDate: form.startDate ? dayjs(form.startDate).format('YYYY-MM-DD') : undefined,
+        endDate: form.endDate ? dayjs(form.endDate).format('YYYY-MM-DD') : undefined,
+        contractFileIds: uploadedFileIds 
+      };
+
+      await contractManagementService.createContract(payload);
+      navigate(ROUTES.HOST_CONTRACTS);
+    } catch (error) {
+      console.error('Lỗi khi lưu hợp đồng:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Thêm hợp đồng"
-        breadcrumbs={[{ label: 'Chủ trọ' }, { label: 'Hợp đồng thuê' }, { label: 'Thêm hợp đồng' }]}
+        title="Thêm hợp đồng mới"
+        breadcrumbs={[{ label: 'Chủ trọ' }, { label: 'Hợp đồng thuê' }, { label: 'Thêm mới' }]}
       />
 
-      <Paper sx={{ p: 2.5, borderRadius: 2 }}>
+      <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-            <TextField
-              label="Toa nha"
-              name="propertyId"
-              select
-              value={form.propertyId}
-              onChange={handlePropertyChange}
-              fullWidth
-            >
-              <MenuItem value="">Chon toa nha</MenuItem>
-              {properties.map((item) => (
-                <MenuItem key={item.id ?? item.propertyId} value={item.id ?? item.propertyId}>
-                  {item.name || item.propertyName || item.code || item.id}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label="Phòng"
-              name="roomId"
-              select
-              value={form.roomId}
-              onChange={handleChange}
-              fullWidth
-              disabled={!form.propertyId || loadingRooms}
-            >
-              <MenuItem value="">{loadingRooms ? 'Dang tai Phòng...' : 'Chon Phòng'}</MenuItem>
-              {rooms.map((room) => {
-                const roomValue = room.roomId ?? room.id;
-                const roomLabel = room.roomNumber || room.roomNo || room.code || room.roomId || room.id;
-                return (
-                  <MenuItem key={roomValue} value={roomValue}>
-                    {roomLabel}
+          <Grid container spacing={2.5}>
+            {/* Phần 1: Thông tin phòng */}
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="subtitle1" fontWeight={700} color="primary" sx={{ mb: 1 }}>
+                Thông tin phòng trọ
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Chọn tòa nhà"
+                name="propertyId"
+                select
+                value={form.propertyId}
+                onChange={handlePropertyChange}
+                fullWidth
+                required
+              >
+                <MenuItem value="">-- Chọn tòa nhà --</MenuItem>
+                {properties.map((item) => (
+                  <MenuItem key={item.id ?? item.propertyId} value={item.id ?? item.propertyId}>
+                    {item.name || item.propertyName || item.code || item.id}
                   </MenuItem>
-                );
-              })}
-            </TextField>
-            <TextField
-              label="Người đại diện"
-              name="tenantName"
-              value={form.tenantName}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="CCCD/CMND"
-              name="idCardNumber"
-              value={form.idCardNumber}
-              onChange={handleChange}
-              fullWidth
-            />
-            <DatePicker
-              label="Bắt đầu"
-              value={form.startDate ? dayjs(form.startDate) : null}
-              onChange={(value) => setForm(prev => ({ ...prev, startDate: value }))}
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-            <DatePicker
-              label="Kết thúc"
-              value={form.endDate ? dayjs(form.endDate) : null}
-              onChange={(value) => setForm(prev => ({ ...prev, endDate: value }))}
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-            <TextField
-              label="Tiền thuê"
-              name="rent"
-              type="number"
-              value={form.rent}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Tiền cọc"
-              name="deposit"
-              type="number"
-              value={form.deposit}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Trạng thái"
-              name="status"
-              select
-              value={form.status}
-              onChange={handleChange}
-              fullWidth
-            >
-              <MenuItem value="ACTIVE">ACTIVE</MenuItem>
-              <MenuItem value="PENDING">PENDING</MenuItem>
-              <MenuItem value="EXPIRED">EXPIRED</MenuItem>
-            </TextField>
-          </Box>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Chọn phòng"
+                name="roomId"
+                select
+                value={form.roomId}
+                onChange={handleChange}
+                fullWidth
+                required
+                disabled={!form.propertyId || loadingRooms}
+              >
+                <MenuItem value="">{loadingRooms ? 'Đang tải danh sách phòng...' : '-- Chọn phòng --'}</MenuItem>
+                {rooms.map((room) => {
+                  const roomValue = room.roomId ?? room.id;
+                  const roomLabel = room.roomNumber || room.roomNo || room.code || room.roomId || room.id;
+                  const roomStatus = statusConfig[room.status] || room.status || 'N/A';
+                  return (
+                    <MenuItem key={roomValue} value={roomValue}>
+                      {roomLabel} ({roomStatus})
+                    </MenuItem>
+                  );
+                })}
+              </TextField>
+            </Grid>
+
+            {/* Phần 2: Thông tin khách thuê */}
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="subtitle1" fontWeight={700} color="primary" sx={{ mt: 2, mb: 1 }}>
+                Thông tin khách thuê
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Người đại diện"
+                name="tenantId"
+                select
+                value={form.tenantId}
+                onChange={handleTenantChange}
+                fullWidth
+                required
+                disabled={loadingTenants}
+              >
+                <MenuItem value="">{loadingTenants ? 'Đang tải...' : '-- Chọn người đại diện --'}</MenuItem>
+                {tenants.map((t) => (
+                  <MenuItem key={t.id} value={t.id}>
+                    {t.fullName} {t.phone ? `- ${t.phone}` : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="CCCD/CMND"
+                name="idCardNumber"
+                value={form.idCardNumber}
+                onChange={handleChange}
+                fullWidth
+                placeholder="Tự động điền hoặc nhập tay"
+              />
+            </Grid>
+
+            {/* Phần 3: Thông tin hợp đồng */}
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="subtitle1" fontWeight={700} color="primary" sx={{ mt: 2, mb: 1 }}>
+                Chi tiết hợp đồng
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+            </Grid>
+
+            {/* Bắt đầu và kết thúc chung 1 grid item để thành 1 "cột" logic */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Stack direction="row" spacing={2}>
+                <DatePicker
+                  label="Ngày bắt đầu"
+                  value={form.startDate ? dayjs(form.startDate) : null}
+                  onChange={(value) => setForm(prev => ({ ...prev, startDate: value }))}
+                  slotProps={{ textField: { fullWidth: true, required: true } }}
+                />
+                <DatePicker
+                  label="Ngày kết thúc"
+                  value={form.endDate ? dayjs(form.endDate) : null}
+                  onChange={(value) => setForm(prev => ({ ...prev, endDate: value }))}
+                  slotProps={{ textField: { fullWidth: true, required: true } }}
+                />
+              </Stack>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <TextField
+                label="Giá thuê (VND)"
+                name="rent"
+                type="number"
+                value={form.rent}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <TextField
+                label="Tiền cọc (VND)"
+                name="deposit"
+                type="number"
+                value={form.deposit}
+                onChange={handleChange}
+                fullWidth
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Trạng thái"
+                name="status"
+                select
+                value={form.status}
+                onChange={handleChange}
+                fullWidth
+              >
+                <MenuItem value="ACTIVE">Kích hoạt (Active)</MenuItem>
+                <MenuItem value="PENDING">Chờ xử lý (Pending)</MenuItem>
+                <MenuItem value="EXPIRED">Hết hạn (Expired)</MenuItem>
+              </TextField>
+            </Grid>
+
+            {/* Phần 4: Hình ảnh/Tài liệu */}
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="subtitle2" sx={{ mt: 2, mb: 1, fontWeight: 700 }}>Hình ảnh hợp đồng</Typography>
+              <Box sx={{ p: 2, border: '1px dashed', borderColor: 'divider', borderRadius: 2, textAlign: 'center' }}>
+                <Button variant="outlined" component="label" sx={{ mb: 1 }}>
+                  Tải ảnh lên
+                  <input type="file" multiple hidden accept="image/*" onChange={handleFileChange} />
+                </Button>
+                <Typography variant="caption" display="block" color="text.secondary">
+                  Hỗ trợ định dạng .jpg, .png. Tối đa 5 file.
+                </Typography>
+              </Box>
+
+              {form.contractFiles?.length > 0 && (
+                <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {form.contractFiles.map((file, index) => (
+                    <Chip
+                      key={`${file.name}-${index}`}
+                      label={file.name}
+                      onDelete={() => handleRemoveFile(index)}
+                      onClick={() => handlePreviewFile(file)}
+                      variant="outlined"
+                      color="primary"
+                    />
+                  ))}
+                </Box>
+              )}
+            </Grid>
+          </Grid>
         </LocalizationProvider>
 
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>Upload anh hop dong</Typography>
-          <Button variant="outlined" component="label">
-            Chon file
-            <input type="file" multiple hidden accept="image/*" onChange={handleFileChange} />
+        <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ mt: 4 }}>
+          <Button variant="outlined" size="large" onClick={handleCancel} sx={{ px: 4 }} disabled={isSaving}>
+            Hủy bỏ
           </Button>
-          {form.contractFiles?.length > 0 && (
-            <Box sx={{ mt: 1 }}>
-              {form.contractFiles.map((file, index) => (
-                <Stack key={`${file.name}-${index}`} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                  <Button variant="text" size="small" onClick={() => handlePreviewFile(file)}>
-                    {file.name}
-                  </Button>
-                  <Button variant="text" color="error" size="small" onClick={() => handleRemoveFile(index)}>
-                    Xoa
-                  </Button>
-                </Stack>
-              ))}
-            </Box>
-          )}
-        </Box>
-
-        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 3 }}>
-          <Button variant="outlined" onClick={handleCancel}>Quay lai</Button>
-          <Button variant="contained" onClick={handleSave} disabled={loadingProps}>Lưu</Button>
+          <Button 
+            variant="contained" 
+            size="large" 
+            onClick={handleSave} 
+            disabled={loadingProps || isSaving} 
+            sx={{ px: 4 }}
+          >
+            {isSaving ? 'Đang lưu...' : 'Lưu hợp đồng'}
+          </Button>
         </Stack>
       </Paper>
     </Box>

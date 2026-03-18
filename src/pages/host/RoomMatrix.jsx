@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Grid,
@@ -21,6 +21,7 @@ import {
   Collapse,
   Button,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import {
   Search,
@@ -30,37 +31,26 @@ import {
   Visibility,
   Edit,
   RestartAlt,
+  Add,
 } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import { ROUTES } from '../../constants';
-
-// Enhanced mock data
-const initialRooms = [
-  { id: 1, roomNumber: '101', buildingName: 'Tòa nhà A', buildingStatus: 'Hoạt động', type: 'Studio', status: 'occupied', tenant: 'Nguyễn Văn A', price: 4500000 },
-  { id: 2, roomNumber: '102', buildingName: 'Tòa nhà A', buildingStatus: 'Hoạt động', type: 'Studio', status: 'vacant', tenant: null, price: 4500000 },
-  { id: 3, roomNumber: '103', buildingName: 'Tòa nhà A', buildingStatus: 'Hoạt động', type: 'Studio', status: 'occupied', tenant: 'Trần Thị B', price: 4200000 },
-  { id: 4, roomNumber: '104', buildingName: 'Tòa nhà A', buildingStatus: 'Hoạt động', type: '1BR', status: 'maintenance', tenant: null, price: 5500000 },
-  { id: 5, roomNumber: '201', buildingName: 'Tòa nhà A', buildingStatus: 'Hoạt động', type: 'Studio', status: 'occupied', tenant: 'Lê Văn C', price: 4500000 },
-  { id: 6, roomNumber: '202', buildingName: 'Tòa nhà B', buildingStatus: 'Hoạt động', type: 'Studio', status: 'occupied', tenant: 'Phạm Thị D', price: 4800000 },
-  { id: 7, roomNumber: '203', buildingName: 'Tòa nhà B', buildingStatus: 'Đầy phòng', type: '2BR', status: 'vacant', tenant: null, price: 7500000 },
-  { id: 8, roomNumber: '204', buildingName: 'Tòa nhà B', buildingStatus: 'Đầy phòng', type: 'Studio', status: 'occupied', tenant: 'Hoàng Văn E', price: 4500000 },
-  { id: 9, roomNumber: '301', buildingName: 'Tòa nhà B', buildingStatus: 'Hoạt động', type: 'Studio', status: 'occupied', tenant: 'Đặng Thị F', price: 4500000 },
-  { id: 10, roomNumber: '302', buildingName: 'Tòa nhà C', buildingStatus: 'Bảo trì', type: 'Penthouse', status: 'vacant', tenant: null, price: 12000000 },
-  { id: 11, roomNumber: '303', buildingName: 'Tòa nhà C', buildingStatus: 'Bảo trì', type: 'Studio', status: 'occupied', tenant: 'Bùi Văn G', price: 4500000 },
-  { id: 12, roomNumber: '304', buildingName: 'Tòa nhà C', buildingStatus: 'Bảo trì', type: 'Studio', status: 'occupied', tenant: 'Ngô Thị H', price: 4500000 },
-  { id: 13, roomNumber: '401', buildingName: 'Tòa nhà A', buildingStatus: 'Hoạt động', type: '1BR', status: 'occupied', tenant: 'Vũ Văn I', price: 5500000 },
-  { id: 14, roomNumber: '402', buildingName: 'Tòa nhà A', buildingStatus: 'Hoạt động', type: '1BR', status: 'vacant', tenant: null, price: 5500000 },
-  { id: 15, roomNumber: '403', buildingName: 'Tòa nhà B', buildingStatus: 'Hoạt động', type: 'Studio', status: 'occupied', tenant: 'Đỗ Thị J', price: 4500000 },
-];
+import propertyManagementService from '../../services/host/propertyManagement/service';
 
 const statusConfig = {
-  occupied: { color: 'primary', label: 'Đang thuê' },
-  vacant: { color: 'success', label: 'Trống' },
-  maintenance: { color: 'warning', label: 'Bảo trì' },
+  'AVAILABLE': { color: 'success', label: 'Trống' },
+  'OCCUPIED': { color: 'primary', label: 'Đang thuê' },
+  'MAINTENANCE': { color: 'warning', label: 'Bảo trì' },
+  // Fallback for mock data or different API values
+  'occupied': { color: 'primary', label: 'Đang thuê' },
+  'vacant': { color: 'success', label: 'Trống' },
+  'maintenance': { color: 'warning', label: 'Bảo trì' },
 };
 
 const RoomMatrix = () => {
   const navigate = useNavigate();
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [showFilters, setShowFilters] = useState(false);
@@ -70,7 +60,7 @@ const RoomMatrix = () => {
     buildingName: '',
     minPrice: '',
     maxPrice: '',
-    buildingStatus: '',
+    buildingStatus: '', // Note: API might not have this per room
     tenantName: '',
     roomType: '',
     roomStatus: '',
@@ -78,6 +68,24 @@ const RoomMatrix = () => {
 
   // Filter state for data
   const [appliedFilters, setAppliedFilters] = useState({ ...searchForm });
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const fetchRooms = async () => {
+    setLoading(true);
+    try {
+      const data = await propertyManagementService.getAllProperties();
+      // Assuming data is an array based on "getAll" naming
+      setRooms(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch rooms:', error);
+      setRooms([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -105,18 +113,24 @@ const RoomMatrix = () => {
   };
 
   const filteredRooms = useMemo(() => {
-    return initialRooms.filter(room => {
-      const matchBuilding = !appliedFilters.buildingName || room.buildingName.toLowerCase().includes(appliedFilters.buildingName.toLowerCase());
-      const matchBuildingStatus = !appliedFilters.buildingStatus || room.buildingStatus === appliedFilters.buildingStatus;
-      const matchTenant = !appliedFilters.tenantName || (room.tenant && room.tenant.toLowerCase().includes(appliedFilters.tenantName.toLowerCase()));
-      const matchType = !appliedFilters.roomType || room.type === appliedFilters.roomType;
-      const matchStatus = !appliedFilters.roomStatus || room.status === appliedFilters.roomStatus;
-      const matchMinPrice = !appliedFilters.minPrice || room.price >= Number(appliedFilters.minPrice);
-      const matchMaxPrice = !appliedFilters.maxPrice || room.price <= Number(appliedFilters.maxPrice);
+    return rooms.filter(room => {
+      // Mapping API fields to filter logic
+      const buildingName = room.propertyName || '';
+      const tenantName = room.tenantName || '';
+      const typeRoom = room.typeRoom || '';
+      const statusRoom = room.statusRoom || '';
+      const price = Number(room.price) || 0;
 
-      return matchBuilding && matchBuildingStatus && matchTenant && matchType && matchStatus && matchMinPrice && matchMaxPrice;
+      const matchBuilding = !appliedFilters.buildingName || buildingName.toLowerCase().includes(appliedFilters.buildingName.toLowerCase());
+      const matchTenant = !appliedFilters.tenantName || tenantName.toLowerCase().includes(appliedFilters.tenantName.toLowerCase());
+      const matchType = !appliedFilters.roomType || typeRoom === appliedFilters.roomType;
+      const matchStatus = !appliedFilters.roomStatus || statusRoom === appliedFilters.roomStatus;
+      const matchMinPrice = !appliedFilters.minPrice || price >= Number(appliedFilters.minPrice);
+      const matchMaxPrice = !appliedFilters.maxPrice || price <= Number(appliedFilters.maxPrice);
+
+      return matchBuilding && matchTenant && matchType && matchStatus && matchMinPrice && matchMaxPrice;
     });
-  }, [appliedFilters]);
+  }, [appliedFilters, rooms]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -128,6 +142,7 @@ const RoomMatrix = () => {
   };
 
   const formatPrice = (price) => {
+    if (!price) return '0 ₫';
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
 
@@ -136,18 +151,27 @@ const RoomMatrix = () => {
     navigate(targetPath);
   };
 
+  const getStatusDisplay = (status) => {
+    const config = statusConfig[status] || { color: 'default', label: status || 'N/A' };
+    return <Chip label={config.label} color={config.color} size="small" sx={{ fontWeight: 600, minWidth: 90 }} />;
+  };
+
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader 
-        title="Quản lý Phòng & Tòa nhà" 
-        breadcrumbs={[{ label: 'Quản lý Tài sản' }, { label: 'Danh sách Phòng' }]}
+        title="Danh sách tất cả phòng" 
+        breadcrumbs={[{ label: 'Quản lý Tài sản' }, { label: 'Tất cả phòng' }]}
+        action={{
+                  label: 'Thêm phòng',
+                  icon: <Add />,
+                  onClick: () => {} // Placeholder
+                }}  
       />
 
       {/* Filter Section */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-        {/* Always Visible: Main Search Fields */}
-        <Grid container spacing={2} alignItems="center" columns={12}>
-          <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={6} md={6}>
             <TextField
               fullWidth
               size="small"
@@ -160,7 +184,7 @@ const RoomMatrix = () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 5, md: 5 }}>
+          <Grid item xs={12} sm={5} md={5}>
             <TextField
               fullWidth
               size="small"
@@ -173,7 +197,7 @@ const RoomMatrix = () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 1, md: 1 }}>
+          <Grid item xs={12} sm={1} md={1}>
           <Tooltip title="Bộ lọc nâng cao">
               <IconButton 
                 color={showFilters ? 'primary' : 'default'} 
@@ -184,27 +208,11 @@ const RoomMatrix = () => {
               </IconButton>
             </Tooltip>
           </Grid>
-          <Grid size={12}>
+          <Grid item xs={12}>
             <Collapse in={showFilters}>
               <Box sx={{ pt: 2 }}>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    select
-                    name="buildingStatus"
-                    label="Trạng thái tòa nhà"
-                    value={searchForm.buildingStatus}
-                    onChange={handleInputChange}
-                  >
-                    <MenuItem value="">Tất cả trạng thái</MenuItem>
-                    <MenuItem value="Hoạt động">Hoạt động</MenuItem>
-                    <MenuItem value="Đầy phòng">Đầy phòng</MenuItem>
-                    <MenuItem value="Bảo trì">Bảo trì</MenuItem>
-                  </TextField>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <TextField
                     fullWidth
                     size="small"
@@ -221,7 +229,7 @@ const RoomMatrix = () => {
                     <MenuItem value="Penthouse">Penthouse</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={4}>
                   <TextField
                     fullWidth
                     size="small"
@@ -232,12 +240,12 @@ const RoomMatrix = () => {
                     onChange={handleInputChange}
                   >
                     <MenuItem value="">Tất cả trạng thái</MenuItem>
-                    <MenuItem value="occupied">Đang thuê</MenuItem>
-                    <MenuItem value="vacant">Trống</MenuItem>
-                    <MenuItem value="maintenance">Bảo trì</MenuItem>
+                    <MenuItem value="AVAILABLE">Trống</MenuItem>
+                    <MenuItem value="OCCUPIED">Đang thuê</MenuItem>
+                    <MenuItem value="MAINTENANCE">Bảo trì</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                <Grid item xs={12} sm={12} md={4}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       fullWidth
@@ -263,7 +271,7 @@ const RoomMatrix = () => {
               </Box>
             </Collapse>
           </Grid>
-          <Grid size={{ xs: 12, sm: 12, md: 12 }}>
+          <Grid item xs={12}>
             <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
               <Button 
                 variant="contained" 
@@ -290,82 +298,89 @@ const RoomMatrix = () => {
 
       {/* List Table Section */}
       <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 16px 0 rgba(0,0,0,0.08)' }}>
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50', py: 2 }}>Phòng</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Tòa nhà</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Loại phòng</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Giá thuê</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Người thuê</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Trạng thái</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }} align="right">Thao tác</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredRooms
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((room) => (
-                <TableRow key={room.id} hover>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={700} color="primary.main">
-                      P.{room.roomNumber}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>{room.buildingName}</Typography>
-                      <Typography variant="caption" color="text.secondary">{room.buildingStatus}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{room.type}</TableCell>
-                  <TableCell>{formatPrice(room.price)}</TableCell>
-                  <TableCell>
-                    {room.tenant ? (
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Person sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-                        <Typography variant="body2">{room.tenant}</Typography>
-                      </Stack>
-                    ) : (
-                      <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>Trống</Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={statusConfig[room.status].label} 
-                      color={statusConfig[room.status].color} 
-                      size="small" 
-                      sx={{ fontWeight: 600, minWidth: 90 }}
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                      <Tooltip title="Xem chi tiết">
-                        <IconButton size="small" onClick={() => handleOpenDetail(room.id)}>
-                          <Visibility fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Chỉnh sửa">
-                        <IconButton size="small" color="info" onClick={() => navigate(ROUTES.HOST_ROOM_EDIT.replace(":id", room.id))}>
-                          <Edit fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  </TableCell>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50', py: 2 }}>Phòng</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Tòa nhà</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Loại phòng</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Giá thuê</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Người thuê</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Trạng thái</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }} align="right">Thao tác</TableCell>
                 </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={filteredRooms.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Số dòng mỗi trang:"
-        />
+              </TableHead>
+              <TableBody>
+                {filteredRooms
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((room) => (
+                    <TableRow key={room.id} hover>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={700} color="primary.main">
+                          P.{room.roomNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600}>{room.propertyName || 'N/A'}</Typography>
+                      </TableCell>
+                      <TableCell>{room.typeRoom || 'N/A'}</TableCell>
+                      <TableCell>{formatPrice(room.price)}</TableCell>
+                      <TableCell>
+                        {room.tenantName ? (
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Person sx={{ fontSize: '1rem', color: 'text.secondary' }} />
+                            <Typography variant="body2">{room.tenantName}</Typography>
+                          </Stack>
+                        ) : (
+                          <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>Trống</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {getStatusDisplay(room.statusRoom)}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                          <Tooltip title="Xem chi tiết">
+                            <IconButton size="small" onClick={() => handleOpenDetail(room.id)}>
+                              <Visibility fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Chỉnh sửa">
+                            <IconButton size="small" color="info" onClick={() => navigate(ROUTES.HOST_ROOM_EDIT.replace(":id", room.id))}>
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                {filteredRooms.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                      <Typography variant="body2" color="text.secondary">Không tìm thấy phòng nào</Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25]}
+              component="div"
+              count={filteredRooms.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Số dòng mỗi trang:"
+            />
+          </>
+        )}
       </TableContainer>
     </Box>
   );

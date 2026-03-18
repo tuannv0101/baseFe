@@ -57,7 +57,7 @@ const getMenuItems = (role) => {
     case ROLES.HOST:
       return [
         { title: 'Tổng quan Host', icon: <DashboardIcon />, path: ROUTES.HOST_DASHBOARD },
-        { title: 'Tòa nhà & Phòng', icon: <HomeWorkIcon />, path: ROUTES.HOST_ROOMS },
+        { title: 'Quản lý tòa nhà', icon: <HomeWorkIcon />, path: ROUTES.HOST_BUILDINGS },
         { title: 'Khách thuê', icon: <PeopleIcon />, path: ROUTES.HOST_TENANTS },
         { title: 'Hợp đồng thuê', icon: <DescriptionIcon />, path: ROUTES.HOST_CONTRACTS },
         { title: 'Dịch vụ & Tiện ích', icon: <BuildIcon />, path: ROUTES.HOST_SERVICES },

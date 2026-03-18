@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -22,80 +22,50 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
+  TableContainer,
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete, ArrowBack } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import { ROUTES } from '../../constants';
-import hostService from '../../services/host/service';
-
-const roomDetailMock = {
-  roomId: 13,
-  propertyId: 1,
-  propertyName: 'name1',
-  propertyAddress: '123',
-  tenantId: null,
-  tenantFullName: null,
-  idCardNumber: '',
-  contactPhone: '',
-  area: 40.0,
-  floor: 3,
-  price: '6600000',
-  roomNumber: 'P.401',
-  status: 'AVAILABLE',
-  type: '2BR',
-  assets: [
-    { id: 171, name: 'Giuong doi', brand: 'IKEA', serialNumber: 'BED-IK-7788', status: 'NEW' },
-    { id: 172, name: 'Dem', brand: 'Everon', serialNumber: 'MAT-EV-1122', status: 'NEW' },
-    { id: 173, name: 'Tu quan ao', brand: 'IKEA', serialNumber: 'WARD-IK-9911', status: 'GOOD' },
-    { id: 174, name: 'Ban lam viec', brand: 'IKEA', serialNumber: 'DESK-IK-5566', status: 'GOOD' },
-    { id: 175, name: 'Ghe', brand: 'Hoa Phat', serialNumber: 'CHAIR-HP-7781', status: 'GOOD' },
-    { id: 176, name: 'Dieu hoa', brand: 'Daikin', serialNumber: 'AC-DK-3321', status: 'GOOD' },
-    { id: 177, name: 'Tu lanh', brand: 'Panasonic', serialNumber: 'FR-PN-8891', status: 'GOOD' },
-    { id: 178, name: 'May giat', brand: 'LG', serialNumber: 'WM-LG-2211', status: 'GOOD' },
-    { id: 179, name: 'Binh nong lanh', brand: 'Ariston', serialNumber: 'WH-AR-3321', status: 'GOOD' },
-    { id: 180, name: 'TV', brand: 'Samsung', serialNumber: 'TV-SS-9001', status: 'GOOD' },
-    { id: 181, name: 'Quat', brand: 'Asia', serialNumber: 'FAN-AS-7711', status: 'GOOD' },
-    { id: 182, name: 'Den tran', brand: 'Philips', serialNumber: 'LAMP-PH-2201', status: 'NEW' },
-    { id: 183, name: 'Router Wifi', brand: 'TP-Link', serialNumber: 'WF-TP-7781', status: 'GOOD' },
-    { id: 185, name: 'Bep dien', brand: 'Sunhouse', serialNumber: 'ST-SH-1123', status: 'GOOD' },
-  ],
-  servicePrices: [
-    { id: 1, name: 'Dien', unit: 'kWh', price: 3500 },
-    { id: 2, name: 'Nuoc', unit: 'm3', price: 15000 },
-    { id: 3, name: 'Internet', unit: 'thang', price: 200000 },
-    { id: 4, name: 'Giu xe', unit: 'thang', price: 80000 },
-  ],
-};
+import roomManagementService from '../../services/host/roomManagement/service';
+import propertyManagementService from '../../services/host/propertyManagement/service';
 
 const statusOptions = [
-  { value: 'AVAILABLE', label: 'AVAILABLE' },
-  { value: 'OCCUPIED', label: 'OCCUPIED' },
-  { value: 'MAINTENANCE', label: 'MAINTENANCE' },
+  { value: 'AVAILABLE', label: 'Trống' },
+  { value: 'OCCUPIED', label: 'Đang thuê' },
+  { value: 'MAINTENANCE', label: 'Bảo trì' },
 ];
 
 const typeOptions = [
   { value: 'Studio', label: 'Studio' },
-  { value: '1BR', label: '1BR' },
-  { value: '2BR', label: '2BR' },
+  { value: '1BR', label: '1 Phòng ngủ' },
+  { value: '2BR', label: '2 Phòng ngủ' },
   { value: 'Penthouse', label: 'Penthouse' },
 ];
 
-const RoomEdit = () => {
+const RoomEdit = ({ isCreate = false }) => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const buildingIdFromQuery = queryParams.get('buildingId');
+
   const [tab, setTab] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [properties, setProperties] = useState([]);
+  
+  const [form, setForm] = useState({
+    propertiesId: buildingIdFromQuery || '',
+    roomNumber: '',
+    type: 'Studio',
+    price: 0,
+    area: '',
+    floor: '',
+    status: 'AVAILABLE',
+    assets: [],
+  });
 
-  const initialForm = useMemo(() => {
-    if (!id) return roomDetailMock;
-    return {
-      ...roomDetailMock,
-      roomId: Number(id) || roomDetailMock.roomId,
-      roomNumber: `P.${id}`,
-    };
-  }, [id]);
-
-  const [form, setForm] = useState(initialForm);
-  const [lookup, setLookup] = useState({ loading: false, error: '' });
   const [assetDialogOpen, setAssetDialogOpen] = useState(false);
   const [assetDraft, setAssetDraft] = useState({
     name: '',
@@ -105,68 +75,98 @@ const RoomEdit = () => {
   });
   const [editingAssetId, setEditingAssetId] = useState(null);
 
+  useEffect(() => {
+    fetchProperties();
+    if (!isCreate && id) {
+      fetchRoomDetail();
+    }
+  }, [id, isCreate]);
+
+  const fetchProperties = async () => {
+    try {
+      const response = await propertyManagementService.getAllProperties();
+      const data = response?.data?.items || response?.data || response || [];
+      setProperties(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách tòa nhà:', error);
+    }
+  };
+
+  const fetchRoomDetail = async () => {
+    setLoading(true);
+    try {
+      const response = await roomManagementService.getRoomById(id);
+      const data = response?.data || response;
+      if (data) {
+        setForm({
+          propertiesId: data.propertyId || data.propertiesId || '',
+          roomNumber: data.roomNumber || '',
+          type: data.type || data.typeRoom || 'Studio',
+          price: data.price || 0,
+          area: data.area || '',
+          floor: data.floor || '',
+          status: data.status || data.statusRoom || 'AVAILABLE',
+          assets: data.assets || data.roomAssetResDTOS || [],
+        });
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải chi tiết phòng:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  useEffect(() => {
-    const idCardNumber = (form.idCardNumber || '').trim();
-    if (!idCardNumber) {
-      setLookup({ loading: false, error: '' });
-      setForm(prev => ({ ...prev, tenantFullName: '', tenantId: null, contactPhone: '' }));
-      return;
-    }
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const payload = {
+        propertiesId: form.propertiesId,
+        area: String(form.area),
+        floor: String(form.floor),
+        roomNumber: form.roomNumber,
+        type: form.type,
+        price: Number(form.price),
+        roomAssetCreateReqDTOS: form.assets.map(a => ({
+          name: a.name,
+          brand: a.brand,
+          serialNumber: a.serialNumber,
+          status: a.status,
+        })),
+      };
 
-    let active = true;
-    setLookup({ loading: true, error: '' });
-
-    const timer = setTimeout(async () => {
-      try {
-        const response = await hostService.getTenantByIdCardNumber(idCardNumber);
-        const tenant = response?.data ?? response?.data?.data ?? null;
-        const tenantFullName = tenant?.tenantFullName || tenant?.fullName || tenant?.name || '';
-        const tenantId = tenant?.tenantId ?? tenant?.id ?? null;
-        const contactPhone = tenant?.phoneNumber || tenant?.phone || tenant?.mobile || tenant?.contactPhone || '';
-
-        if (!active) return;
-        if (tenantFullName) {
-          setForm(prev => ({ ...prev, tenantFullName, tenantId, contactPhone }));
-          setLookup({ loading: false, error: '' });
-        } else {
-          setLookup({ loading: false, error: "Khong tim thay Người thuê" });
-        }
-      } catch (error) {
-        if (!active) return;
-        setLookup({ loading: false, error: "Khong tim thay Người thuê" });
+      if (isCreate) {
+        await roomManagementService.createRoom(payload);
+      } else {
+        await roomManagementService.updateRoom(id, payload);
       }
-    }, 400);
-
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [form.idCardNumber]);
-
-  const handleSave = () => {
-    // TODO: hook API update
-    const detailPath = ROUTES.HOST_ROOM_DETAIL.replace(':id', form.roomId);
-    navigate(detailPath);
+      
+      // Quay lại màn hình trước đó hoặc danh sách phòng
+      if (form.propertiesId) {
+        navigate(ROUTES.HOST_BUILDING_DETAIL.replace(':id', form.propertiesId));
+      } else {
+        navigate(ROUTES.HOST_ROOMS);
+      }
+    } catch (error) {
+      console.error('Lỗi khi lưu phòng:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
-    const detailPath = ROUTES.HOST_ROOM_DETAIL.replace(':id', form.roomId);
-    navigate(detailPath);
+    navigate(-1);
   };
 
+  // Asset handlers
   const handleOpenAddAsset = () => {
     setAssetDraft({ name: '', brand: '', serialNumber: '', status: 'NEW' });
     setEditingAssetId(null);
     setAssetDialogOpen(true);
-  };
-
-  const handleCloseAddAsset = () => {
-    setAssetDialogOpen(false);
   };
 
   const handleOpenEditAsset = (asset) => {
@@ -180,47 +180,21 @@ const RoomEdit = () => {
     setAssetDialogOpen(true);
   };
 
-  const handleAssetDraftChange = (e) => {
-    const { name, value } = e.target;
-    setAssetDraft(prev => ({ ...prev, [name]: value }));
-  };
-
   const handleSubmitAsset = () => {
-    const name = assetDraft.name.trim();
-    if (!name) return;
+    if (!assetDraft.name.trim()) return;
 
     if (editingAssetId) {
       setForm(prev => ({
         ...prev,
         assets: prev.assets.map(item =>
-          item.id === editingAssetId
-            ? {
-                ...item,
-                name,
-                brand: assetDraft.brand.trim(),
-                serialNumber: assetDraft.serialNumber.trim(),
-                status: assetDraft.status,
-              }
-            : item
+          item.id === editingAssetId ? { ...assetDraft, id: editingAssetId } : item
         ),
       }));
     } else {
-      const newAsset = {
-        id: Date.now(),
-        name,
-        brand: assetDraft.brand.trim(),
-        serialNumber: assetDraft.serialNumber.trim(),
-        status: assetDraft.status,
-      };
-      setForm(prev => ({ ...prev, assets: [newAsset, ...(prev.assets || [])] }));
+      const newAsset = { ...assetDraft, id: Date.now() };
+      setForm(prev => ({ ...prev, assets: [...prev.assets, newAsset] }));
     }
-
     setAssetDialogOpen(false);
-    setEditingAssetId(null);
-  };
-
-  const handleEditAsset = (asset) => {
-    handleOpenEditAsset(asset);
   };
 
   const handleDeleteAsset = (assetId) => {
@@ -230,98 +204,91 @@ const RoomEdit = () => {
     }));
   };
 
+  if (loading && !isCreate) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Chỉnh sửa Phòng"
-        breadcrumbs={[{ label: 'Quan ly Tai san' }, { label: 'Danh sach Phòng' }, { label: form.roomNumber }, { label: 'Chỉnh sửa' }]}
+        title={isCreate ? 'Thêm phòng mới' : 'Chỉnh sửa phòng'}
+        breadcrumbs={[
+          { label: 'Quản lý tài sản' },
+          { label: 'Tòa nhà', path: ROUTES.HOST_BUILDINGS },
+          { label: isCreate ? 'Thêm phòng' : form.roomNumber }
+        ]}
       />
 
-      <Paper sx={{ p: 2.5, borderRadius: 2 }}>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 6 }}>
+      <Button 
+        startIcon={<ArrowBack />} 
+        onClick={handleCancel}
+        sx={{ mb: 2 }}
+      >
+        Quay lại
+      </Button>
+
+      <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+        <Typography variant="h6" fontWeight={700} gutterBottom>Thông tin cơ bản</Typography>
+        <Grid container spacing={2.5}>
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Ma Phòng"
-              value={form.roomId}
-              disabled
-            />
+              label="Tòa nhà"
+              name="propertiesId"
+              select
+              value={form.propertiesId}
+              onChange={handleChange}
+              required
+              size="small"
+            >
+              {properties.map(p => (
+                <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+              ))}
+            </TextField>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Phòng"
+              label="Số phòng / Tên phòng"
               name="roomNumber"
               value={form.roomNumber}
               onChange={handleChange}
+              required
+              size="small"
+              placeholder="Ví dụ: P.101"
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid item xs={12} sm={4}>
             <TextField
               fullWidth
-              label="Toa nha"
-              name="propertyName"
-              value={form.propertyName}
-              onChange={handleChange}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Dia chi"
-              name="propertyAddress"
-              value={form.propertyAddress}
-              onChange={handleChange}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="So CCCD/CMND"
-              name="idCardNumber"
-              value={form.idCardNumber || ''}
-              onChange={handleChange}
-              helperText={lookup.loading ? "Dang tim..." : lookup.error}
-              error={Boolean(lookup.error)}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Người thuê"
-              name="tenantFullName"
-              value={form.tenantFullName || ''}
-              onChange={handleChange}
-              disabled
-              helperText="Tu dong theo so CCCD/CMND"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="So dien thoai lien he"
-              name="contactPhone"
-              value={form.contactPhone || ''}
-              onChange={handleChange}
-              disabled
-              helperText="Tu dong theo so CCCD/CMND"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Loai Phòng"
+              label="Loại phòng"
               name="type"
               select
               value={form.type}
               onChange={handleChange}
+              size="small"
             >
               {typeOptions.map(opt => (
                 <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
               ))}
             </TextField>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              label="Giá thuê (VNĐ)"
+              name="price"
+              type="number"
+              value={form.price}
+              onChange={handleChange}
+              size="small"
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
             <TextField
               fullWidth
               label="Trạng thái"
@@ -329,149 +296,138 @@ const RoomEdit = () => {
               select
               value={form.status}
               onChange={handleChange}
+              size="small"
             >
               {statusOptions.map(opt => (
                 <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
               ))}
             </TextField>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Gia"
-              name="price"
+              label="Diện tích (m2)"
+              name="area"
               type="number"
-              value={form.price}
+              value={form.area}
               onChange={handleChange}
+              size="small"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Tầng"
+              name="floor"
+              type="number"
+              value={form.floor}
+              onChange={handleChange}
+              size="small"
             />
           </Grid>
         </Grid>
 
-        <Divider sx={{ my: 2 }} />
+        <Divider sx={{ my: 4 }} />
 
-        <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 1 }}>
-          <Tab label="Danh sach tiện nghi" />
-          <Tab label="Gia dich vu chung" />
-        </Tabs>
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight={700}>Tiện nghi & Nội thất</Typography>
+          <Button variant="outlined" size="small" startIcon={<Add />} onClick={handleOpenAddAsset}>
+            Thêm tiện nghi
+          </Button>
+        </Box>
 
-        {tab === 0 && (
-          <>
-            <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
-              <Button variant="outlined" startIcon={<Add />} onClick={handleOpenAddAsset}>
-                Thêm tiện nghi
-              </Button>
-            </Stack>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Tai san</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Hang</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Serial</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="right">Thao tác</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {form.assets.map((asset) => (
-                  <TableRow key={asset.id}>
-                    <TableCell>{asset.name}</TableCell>
-                    <TableCell>{asset.brand}</TableCell>
-                    <TableCell>{asset.serialNumber}</TableCell>
-                    <TableCell>{asset.status}</TableCell>
-                    <TableCell align="right">
-                      <IconButton size="small" onClick={() => handleEditAsset(asset)}>
-                        <Edit fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" color="error" onClick={() => handleDeleteAsset(asset.id)}>
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </>
-        )}
-
-        {tab === 1 && (
+        <TableContainer variant="outlined" sx={{ borderRadius: 1 }}>
           <Table size="small">
             <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Dich vu</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Don vi</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="right">Gia</TableCell>
+              <TableRow sx={{ bgcolor: 'grey.50' }}>
+                <TableCell sx={{ fontWeight: 700 }}>Tên tài sản</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Thương hiệu</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Số Serial</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Tình trạng</TableCell>
+                <TableCell sx={{ fontWeight: 700 }} align="right">Hành động</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {form.servicePrices.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.unit}</TableCell>
-                  <TableCell align="right">{item.price}</TableCell>
+              {form.assets.length > 0 ? form.assets.map((asset) => (
+                <TableRow key={asset.id || asset.serialNumber}>
+                  <TableCell>{asset.name}</TableCell>
+                  <TableCell>{asset.brand || '-'}</TableCell>
+                  <TableCell>{asset.serialNumber || '-'}</TableCell>
+                  <TableCell>
+                    <Chip label={asset.status} size="small" variant="outlined" />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton size="small" onClick={() => handleOpenEditAsset(asset)}>
+                      <Edit fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" color="error" onClick={() => handleDeleteAsset(asset.id)}>
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 2 }}>
+                    <Typography variant="body2" color="text.secondary">Chưa có tiện nghi nào được thêm</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
-        )}
+        </TableContainer>
 
-        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 2 }}>
-          <Button variant="outlined" onClick={handleCancel}>Quay lai</Button>
-          <Button variant="contained" onClick={handleSave}>Lưu</Button>
+        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 4 }}>
+          <Button variant="outlined" onClick={handleCancel} disabled={loading}>Hủy</Button>
+          <Button variant="contained" onClick={handleSave} disabled={loading} sx={{ px: 4 }}>
+            {loading ? <CircularProgress size={24} /> : (isCreate ? 'Tạo phòng' : 'Lưu thay đổi')}
+          </Button>
         </Stack>
       </Paper>
 
-      <Dialog open={assetDialogOpen} onClose={handleCloseAddAsset} maxWidth="sm" fullWidth>
-        <DialogTitle>{editingAssetId ? 'Chỉnh sửa tiện nghi' : 'Thêm tiện nghi'}</DialogTitle>
+      {/* Dialog thêm/sửa tài sản */}
+      <Dialog open={assetDialogOpen} onClose={() => setAssetDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>{editingAssetId ? 'Sửa tiện nghi' : 'Thêm tiện nghi'}</DialogTitle>
         <DialogContent dividers>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Ten tai san"
-                name="name"
-                value={assetDraft.name}
-                onChange={handleAssetDraftChange}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Hang"
-                name="brand"
-                value={assetDraft.brand}
-                onChange={handleAssetDraftChange}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Serial"
-                name="serialNumber"
-                value={assetDraft.serialNumber}
-                onChange={handleAssetDraftChange}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Trạng thái"
-                name="status"
-                select
-                value={assetDraft.status}
-                onChange={handleAssetDraftChange}
-              >
-                <MenuItem value="NEW">NEW</MenuItem>
-                <MenuItem value="GOOD">GOOD</MenuItem>
-                <MenuItem value="USED">USED</MenuItem>
-              </TextField>
-            </Grid>
-          </Grid>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Tên tài sản"
+              size="small"
+              value={assetDraft.name}
+              onChange={(e) => setAssetDraft({ ...assetDraft, name: e.target.value })}
+              required
+            />
+            <TextField
+              fullWidth
+              label="Thương hiệu"
+              size="small"
+              value={assetDraft.brand}
+              onChange={(e) => setAssetDraft({ ...assetDraft, brand: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              label="Số Serial"
+              size="small"
+              value={assetDraft.serialNumber}
+              onChange={(e) => setAssetDraft({ ...assetDraft, serialNumber: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              label="Tình trạng"
+              size="small"
+              select
+              value={assetDraft.status}
+              onChange={(e) => setAssetDraft({ ...assetDraft, status: e.target.value })}
+            >
+              <MenuItem value="NEW">Mới (NEW)</MenuItem>
+              <MenuItem value="GOOD">Tốt (GOOD)</MenuItem>
+              <MenuItem value="USED">Đã sử dụng (USED)</MenuItem>
+            </TextField>
+          </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseAddAsset}>Hủy</Button>
-          <Button variant="contained" onClick={handleSubmitAsset}>
-            {editingAssetId ? 'Lưu' : 'Thêm'}
-          </Button>
+          <Button onClick={() => setAssetDialogOpen(false)}>Hủy</Button>
+          <Button variant="contained" onClick={handleSubmitAsset}>Xác nhận</Button>
         </DialogActions>
       </Dialog>
     </Box>

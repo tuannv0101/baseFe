@@ -13,7 +13,10 @@ export const ROUTES = {
 
   // Landlord/Host
   HOST_DASHBOARD: '/host',
+  HOST_BUILDINGS: '/host/buildings',
+  HOST_BUILDING_DETAIL: '/host/buildings/:id',
   HOST_ROOMS: '/host/rooms',
+  HOST_ROOM_CREATE: '/host/rooms/create',
   HOST_ROOM_DETAIL: '/host/rooms/:id',
   HOST_ROOM_EDIT: '/host/rooms/:id/edit',
   HOST_TENANTS: '/host/tenants',

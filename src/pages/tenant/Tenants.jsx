@@ -69,8 +69,8 @@ const Tenants = () => {
   return (
     <Box>
       <PageHeader 
-        title="Hồ sơ Khách thuê" 
-        breadcrumbs={[{ label: 'Quản lý Thuê phòng' }, { label: 'Hồ sơ Khách thuê' }]}
+        title="Quản lý Khách thuê" 
+        breadcrumbs={[{ label: 'Quản lý Khách thuê' }]}
         action={{
           label: 'Thêm khách thuê',
           icon: <Add />,

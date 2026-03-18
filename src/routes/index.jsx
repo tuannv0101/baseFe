@@ -4,6 +4,8 @@ import MainLayout from '../layouts/MainLayout';
 import Login from '../pages/Login';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import HostDashboard from '../pages/host/HostDashboard';
+import BuildingList from '../pages/host/buildings/BuildingList';
+import BuildingDetail from '../pages/host/buildings/BuildingDetail';
 import RoomMatrix from '../pages/host/RoomMatrix';
 import RoomDetail from '../pages/host/RoomDetail';
 import RoomEdit from '../pages/host/RoomEdit';
@@ -80,10 +82,27 @@ const AppRoutes = () => {
             <MainLayout><HostDashboard /></MainLayout>
           </ProtectedRoute>
         } />
+        <Route path={ROUTES.HOST_BUILDINGS} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout><BuildingList /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_BUILDING_DETAIL} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout><BuildingDetail /></MainLayout>
+          </ProtectedRoute>
+        } />
         <Route path={ROUTES.HOST_ROOMS} element={
           <ProtectedRoute allowedRoles={[ROLES.HOST]}>
             <MainLayout>
               <RoomMatrix />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_ROOM_CREATE} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <RoomEdit isCreate={true} />
             </MainLayout>
           </ProtectedRoute>
         } />
