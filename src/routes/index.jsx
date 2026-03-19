@@ -11,12 +11,17 @@ import RoomDetail from '../pages/host/RoomDetail';
 import RoomEdit from '../pages/host/RoomEdit';
 import HostContracts from '../pages/host/HostContracts';
 import HostContractCreate from '../pages/host/HostContractCreate';
+import HostNotifications from '../pages/host/HostNotifications';
+import HostInvoiceCreate from '../pages/host/HostInvoiceCreate';
+import Finance from '../pages/host/Finance';
 import Tenants from '../pages/tenant/Tenants';
 import TenantDetail from '../pages/tenant/TenantDetail';
 import TenantEdit from '../pages/tenant/TenantEdit';
 import Services from '../pages/Services';
 import TenantDashboard from '../pages/tenant/TenantDashboard';
 import PlaceholderPage from '../pages/PlaceholderPage';
+import HostSubscriptions from '../pages/host/HostSubscriptions';
+import HostSupport from '../pages/host/HostSupport';
 import { ROUTES, ROLES } from '../constants';
 import useUserStore from '../store/useUserStore';
 
@@ -166,6 +171,41 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={[ROLES.HOST]}>
             <MainLayout>
               <HostContractCreate />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_FINANCE} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <Finance />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_SUBSCRIPTIONS} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <HostSubscriptions />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_SUPPORT} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <HostSupport />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_NOTIFICATIONS} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <HostNotifications />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOST_INVOICE_CREATE} element={
+          <ProtectedRoute allowedRoles={[ROLES.HOST]}>
+            <MainLayout>
+              <HostInvoiceCreate />
             </MainLayout>
           </ProtectedRoute>
         } />

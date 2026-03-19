@@ -1,7 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Grid from '@mui/material/Grid';
 import {
-  Grid,
   Paper,
   Typography,
   Box,
@@ -338,8 +338,8 @@ const BuildingList = () => {
           {isEdit ? 'Chỉnh sửa tòa nhà' : 'Thêm tòa nhà mới'}
         </DialogTitle>
         <DialogContent dividers>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12}>
+          <Grid container spacing={2} sx={{ width: '100%', m: 0, mt: 0.5 }}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Tên tòa nhà"
@@ -350,7 +350,7 @@ const BuildingList = () => {
                 required
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Địa chỉ"
@@ -363,7 +363,7 @@ const BuildingList = () => {
                 rows={2}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Số tầng"
@@ -375,7 +375,7 @@ const BuildingList = () => {
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Mã hợp đồng thuê"

@@ -1,6 +1,6 @@
 import React from 'react';
+import Grid from '@mui/material/Grid';
 import {
-  Grid,
   Paper,
   Typography,
   Box,
@@ -97,8 +97,8 @@ const Home = () => {
         Tổng quan hệ thống
       </Typography>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={3} sx={{ width: '100%', m: 0 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Tổng doanh thu"
             value="125,000,000 đ"
@@ -107,7 +107,7 @@ const Home = () => {
             trend={12}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Tỷ lệ lấp đầy"
             value="85%"
@@ -116,7 +116,7 @@ const Home = () => {
             trend={2}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Tổng khách thuê"
             value="128"
@@ -125,7 +125,7 @@ const Home = () => {
             trend={5}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Hóa đơn chưa thanh toán"
             value="12"
@@ -136,7 +136,7 @@ const Home = () => {
         </Grid>
 
         {/* Charts */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 12px 0 rgba(0,0,0,0.05)' }}>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
               Biểu đồ Thu - Chi
@@ -156,7 +156,7 @@ const Home = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 12px 0 rgba(0,0,0,0.05)', height: '100%' }}>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
               Trạng thái phòng
@@ -194,7 +194,7 @@ const Home = () => {
         </Grid>
 
         {/* Notifications & Reminders */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 12px 0 rgba(0,0,0,0.05)' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -239,7 +239,7 @@ const Home = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 12px 0 rgba(0,0,0,0.05)' }}>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
               Hoạt động gần đây

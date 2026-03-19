@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Grid from '@mui/material/Grid';
 import {
-  Grid,
   Paper,
   Typography,
   Box,
@@ -170,8 +170,8 @@ const RoomMatrix = () => {
 
       {/* Filter Section */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={6}>
+        <Grid container spacing={2} alignItems="center" sx={{ width: '100%', m: 0 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 6 }}>
             <TextField
               fullWidth
               size="small"
@@ -184,7 +184,7 @@ const RoomMatrix = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={5} md={5}>
+          <Grid size={{ xs: 12, sm: 5, md: 5 }}>
             <TextField
               fullWidth
               size="small"
@@ -197,7 +197,7 @@ const RoomMatrix = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={1} md={1}>
+          <Grid size={{ xs: 12, sm: 1, md: 1 }}>
           <Tooltip title="Bộ lọc nâng cao">
               <IconButton 
                 color={showFilters ? 'primary' : 'default'} 
@@ -208,11 +208,11 @@ const RoomMatrix = () => {
               </IconButton>
             </Tooltip>
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Collapse in={showFilters}>
               <Box sx={{ pt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={4}>
+              <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -229,7 +229,7 @@ const RoomMatrix = () => {
                     <MenuItem value="Penthouse">Penthouse</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -245,7 +245,7 @@ const RoomMatrix = () => {
                     <MenuItem value="MAINTENANCE">Bảo trì</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid item xs={12} sm={12} md={4}>
+                <Grid size={{ xs: 12, sm: 12, md: 4 }}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
                       fullWidth
@@ -271,7 +271,7 @@ const RoomMatrix = () => {
               </Box>
             </Collapse>
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
               <Button 
                 variant="contained" 

@@ -56,6 +56,18 @@ const propertyManagementService = {
     });
     return response.data;
   },
+
+  // GET /api/v1/host/property-management/properties/{propertyId}/services
+  getPropertyServices: async (propertyId: string) => {
+    const response = await axiosInstance.get(`/api/v1/host/property-management/properties/${propertyId}/services`);
+    return response.data;
+  },
+
+  // PUT /api/v1/host/property-management/properties/{propertyId}/services
+  updatePropertyServices: async (propertyId: string, services: any[]) => {
+    const response = await axiosInstance.put(`/api/v1/host/property-management/properties/${propertyId}/services`, services);
+    return response.data;
+  },
 };
 
 export default propertyManagementService;

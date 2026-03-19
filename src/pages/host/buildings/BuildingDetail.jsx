@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Grid from '@mui/material/Grid';
 import {
-  Grid,
   Paper,
   Typography,
   Box,
@@ -20,6 +20,14 @@ import {
   CircularProgress,
   Divider,
   Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  InputAdornment,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Person,
@@ -33,6 +41,16 @@ import {
   Layers,
   Description,
   Add,
+  FlashOn,
+  WaterDrop,
+  Wifi,
+  DeleteOutline,
+  Payments,
+  Settings,
+  Save,
+  Close,
+  Elevator,
+  DirectionsCar,
 } from '@mui/icons-material';
 import PageHeader from '../../../components/common/PageHeader';
 import { ROUTES } from '../../../constants';
@@ -48,14 +66,44 @@ const typeConfig = {
   '2BR': { color: 'secondary', label: 'Phòng đôi' },
   'SUITE': { color: 'error', label: 'Phòng VIP' },
 };
+
+const iconMap = {
+  'Điện': <FlashOn />,
+  'Nước': <WaterDrop />,
+  'Wifi': <Wifi />,
+  'Rác': <DeleteOutline />,
+  'Vệ sinh': <DeleteOutline />,
+  'Quản lý': <Settings />,
+  'Phòng': <MeetingRoom />,
+  'Thang máy': <Elevator />,
+  'Gửi xe': <DirectionsCar />,
+};
+
+const colorMap = {
+  'Điện': '#fbc02d',
+  'Nước': '#1976d2',
+  'Wifi': '#4caf50',
+  'Rác': '#757575',
+  'Vệ sinh': '#757575',
+  'Quản lý': '#9c27b0',
+  'Thang máy': '#ff5722',
+  'Gửi xe': '#607d8b',
+};
+
 const BuildingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [buildingInfo, setBuildingInfo] = useState(null);
+  const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // State cho popup cấu hình dịch vụ
+  const [openServiceDialog, setOpenServiceDialog] = useState(false);
+  const [editingServices, setEditingServices] = useState([]);
+  const [savingServices, setSavingServices] = useState(false);
 
   useEffect(() => {
     fetchBuildingData();
@@ -72,10 +120,75 @@ const BuildingDetail = () => {
       const roomResponse = await propertyManagementService.getRoomMatrix(id);
       // Giả sử API trả về data là mảng các phòng
       setRooms(Array.isArray(roomResponse?.data.items) ? roomResponse.data.items : (Array.isArray(roomResponse) ? roomResponse : []));
+
+      // 3. Lấy dịch vụ chung
+      await fetchServices();
     } catch (error) {
       console.error('Lỗi khi tải thông tin tòa nhà:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const serviceRes = await propertyManagementService.getPropertyServices(id);
+      const list = serviceRes?.data || serviceRes || [];
+      if (Array.isArray(list) && list.length > 0) {
+        setServices(list);
+      } else {
+        const defaults = [
+          { id: '1', name: 'Điện', unit: 'kWh', price: 3500, enabled: true },
+          { id: '2', name: 'Nước', unit: 'm3', price: 15000, enabled: true },
+          { id: '3', name: 'Wifi', unit: 'Phòng', price: 100000, enabled: true },
+          { id: '4', name: 'Rác & Vệ sinh', unit: 'Phòng', price: 50000, enabled: true },
+          { id: '5', name: 'Thang máy', unit: 'Người', price: 50000, enabled: true },
+          { id: '6', name: 'Gửi xe', unit: 'Xe', price: 100000, enabled: true },
+        ];
+        setServices(defaults);
+      }
+    } catch {
+      const defaults = [
+        { id: '1', name: 'Điện', unit: 'kWh', price: 3500, enabled: true },
+        { id: '2', name: 'Nước', unit: 'm3', price: 15000, enabled: true },
+        { id: '3', name: 'Wifi', unit: 'Phòng', price: 100000, enabled: true },
+        { id: '4', name: 'Rác & Vệ sinh', unit: 'Phòng', price: 50000, enabled: true },
+        { id: '5', name: 'Thang máy', unit: 'Người', price: 50000, enabled: true },
+        { id: '6', name: 'Gửi xe', unit: 'Xe', price: 100000, enabled: true },
+      ];
+      setServices(defaults);
+    }
+  };
+
+  const handleOpenServiceDialog = () => {
+    setEditingServices(JSON.parse(JSON.stringify(services))); // Deep copy
+    setOpenServiceDialog(true);
+  };
+
+  const handleCloseServiceDialog = () => {
+    if (!savingServices) {
+      setOpenServiceDialog(false);
+    }
+  };
+
+  const handleUpdateEditingService = (index, field, value) => {
+    const updated = [...editingServices];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditingServices(updated);
+  };
+
+  const handleSaveServices = async () => {
+    setSavingServices(true);
+    try {
+      await propertyManagementService.updatePropertyServices(id, editingServices);
+      setServices(editingServices);
+      setOpenServiceDialog(false);
+      // Có thể thêm toast notification ở đây
+    } catch (error) {
+      console.error('Lỗi khi lưu dịch vụ:', error);
+      alert('Không thể lưu cấu hình dịch vụ. Vui lòng thử lại.');
+    } finally {
+      setSavingServices(false);
     }
   };
 
@@ -143,7 +256,7 @@ const BuildingDetail = () => {
           background: 'linear-gradient(to bottom right, #ffffff, #fafafa)'
         }}
       >
-        <Grid container spacing={4} alignItems="center">
+        <Grid container spacing={4} alignItems="center" sx={{ width: '100%', m: 0 }}>
           <Grid size={{ xs: 12, md: 7 }}>
             <Stack spacing={3}>
               <Box>
@@ -186,7 +299,7 @@ const BuildingDetail = () => {
                 </Stack>
               </Box>
 
-              <Grid container spacing={2}>
+              <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: 'transparent' }}>
                     <Stack direction="row" spacing={1.5} alignItems="center">
@@ -209,6 +322,28 @@ const BuildingDetail = () => {
                     </Stack>
                   </Paper>
                 </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: 'transparent' }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Elevator color="action" />
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block">Thang máy</Typography>
+                        <Typography variant="body2" fontWeight={700}>{building.hasElevator !== false ? 'Có thang máy' : 'Không có'}</Typography>
+                      </Box>
+                    </Stack>
+                  </Paper>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: 'transparent' }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <DirectionsCar color="action" />
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block">Khu vực để xe</Typography>
+                        <Typography variant="body2" fontWeight={700}>{building.hasParking !== false ? 'Có chỗ để xe' : 'Không có'}</Typography>
+                      </Box>
+                    </Stack>
+                  </Paper>
+                </Grid>
               </Grid>
             </Stack>
           </Grid>
@@ -226,11 +361,11 @@ const BuildingDetail = () => {
               }}
             >
               <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ width: 4, height: 16, bgcolor: 'primary.main', borderRadius: 1 }} />
+                <Box component="span" sx={{ width: 4, height: 16, bgcolor: 'primary.main', borderRadius: 1 }} />
                 TRẠNG THÁI PHÒNG
               </Typography>
               
-              <Grid container spacing={2}>
+              <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
                 <Grid size={{ xs: 4 }}>
                   <Box textAlign="center">
                     <Typography variant="h4" fontWeight={800} color="primary.main">
@@ -281,11 +416,167 @@ const BuildingDetail = () => {
                 >
                   Thêm phòng
                 </Button>
+                <Button 
+                  fullWidth 
+                  variant="outlined" 
+                  startIcon={<Settings />} 
+                  onClick={handleOpenServiceDialog}
+                  sx={{ 
+                    borderRadius: 2, 
+                    py: 1,
+                    textTransform: 'none',
+                    fontWeight: 700
+                  }}
+                >
+                  Cấu hình dịch vụ
+                </Button>
               </Stack>
             </Box>
           </Grid>
         </Grid>
       </Paper>
+
+      {/* Dịch vụ chung */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Dịch vụ chung của tòa nhà</Typography>
+        <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
+          {services.filter(s => s.enabled).map((service) => (
+            <Grid key={service.id} size={{ xs: 12, sm: 6, md: 4 }}>
+              <Paper 
+                variant="outlined" 
+                sx={{ 
+                  p: 2, 
+                  borderRadius: 2, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 2,
+                  bgcolor: 'background.paper',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                    borderColor: 'primary.main'
+                  }
+                }}
+              >
+                <Box 
+                  sx={{ 
+                    p: 1.5, 
+                    borderRadius: 2, 
+                    bgcolor: `${colorMap[service.name] || '#1976d2'}15`, 
+                    color: colorMap[service.name] || 'primary.main',
+                    display: 'flex'
+                  }}
+                >
+                  {iconMap[service.name] || <Payments />}
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={700}>{service.name}</Typography>
+                  <Typography variant="body2" color="primary.main" fontWeight={600}>
+                    {formatPrice(service.price)}
+                    <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                      /{service.unit}
+                    </Typography>
+                  </Typography>
+                </Box>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+
+      {/* Dialog Cấu hình dịch vụ */}
+      <Dialog 
+        open={openServiceDialog} 
+        onClose={handleCloseServiceDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 3 }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Cấu hình dịch vụ - {building.name}
+          <IconButton onClick={handleCloseServiceDialog} size="small">
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={3} sx={{ py: 1 }}>
+            {editingServices.map((service, index) => (
+              <Box key={service.id || index}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Box sx={{ 
+                      p: 1, 
+                      borderRadius: 1.5, 
+                      bgcolor: `${colorMap[service.name] || '#1976d2'}15`, 
+                      color: colorMap[service.name] || 'primary.main',
+                      display: 'flex'
+                    }}>
+                      {iconMap[service.name] || <Payments fontSize="small" />}
+                    </Box>
+                    <Typography variant="subtitle1" fontWeight={700}>{service.name}</Typography>
+                  </Stack>
+                </Box>
+                
+                <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
+                  <Grid size={{ xs: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Đơn giá"
+                      type="number"
+                      size="small"
+                      value={service.price}
+                      onChange={(e) => handleUpdateEditingService(index, 'price', Number(e.target.value))}
+                      InputProps={{
+                        endAdornment: <InputAdornment position="end">đ</InputAdornment>,
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Đơn vị"
+                      size="small"
+                      disabled={!service.enabled}
+                      value={service.unit}
+                      onChange={(e) => handleUpdateEditingService(index, 'unit', e.target.value)}
+                    />
+                  </Grid>
+                </Grid>
+                {index < editingServices.length - 1 && <Divider sx={{ mt: 3 }} />}
+              </Box>
+            ))}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, gap: 1 }}>
+          <Button 
+            onClick={handleCloseServiceDialog} 
+            variant="outlined" 
+            color="inherit"
+            disabled={savingServices}
+            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+          >
+            Hủy bỏ
+          </Button>
+          <Button 
+            onClick={handleSaveServices} 
+            variant="contained" 
+            startIcon={savingServices ? <CircularProgress size={20} color="inherit" /> : <Save />}
+            disabled={savingServices}
+            sx={{ 
+              borderRadius: 2, 
+              textTransform: 'none', 
+              fontWeight: 700,
+              px: 3,
+              boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)'
+            }}
+          >
+            {savingServices ? 'Đang lưu...' : 'Lưu cấu hình'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Danh sách phòng */}
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -338,12 +629,12 @@ const BuildingDetail = () => {
                       <TableCell align="right">
                         <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                           <Tooltip title="Xem chi tiết">
-                            <IconButton size="small" onClick={() => navigate(ROUTES.HOST_ROOM_DETAIL.replace(':id', room.id))}>
+                            <IconButton size="small" onClick={() => navigate(ROUTES.HOST_ROOM_DETAIL.replace(':id', room.roomId))}>
                               <Visibility fontSize="small" />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Chỉnh sửa">
-                            <IconButton size="small" color="info" onClick={() => navigate(ROUTES.HOST_ROOM_EDIT.replace(":id", room.id))}>
+                            <IconButton size="small" color="info" onClick={() => navigate(ROUTES.HOST_ROOM_EDIT.replace(":id", room.roomId))}>
                               <Edit fontSize="small" />
                             </IconButton>
                           </Tooltip>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Grid from '@mui/material/Grid';
 import {
   Box,
   Paper,
-  Grid,
   Typography,
   Avatar,
   Chip,
@@ -100,7 +100,7 @@ const TenantDetail = () => {
         }}
       />
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ width: '100%', m: 0 }}>
         {/* Profile Info Card */}
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
@@ -176,7 +176,7 @@ const TenantDetail = () => {
                 <Typography variant="h6" fontWeight={700} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
                   <Home color="primary" /> Thông tin thuê hiện tại
                 </Typography>
-                <Grid container spacing={3}>
+                <Grid container spacing={3} sx={{ width: '100%', m: 0 }}>
                   <Grid size={{ xs: 6, sm: 3 }}>
                     <Typography variant="caption" color="text.secondary">Tòa nhà</Typography>
                     <Typography variant="body1" fontWeight={700}>{tenant.room.building}</Typography>
@@ -205,7 +205,7 @@ const TenantDetail = () => {
                 <History color="primary" />
                 <Typography variant="h6" fontWeight={700}>Lịch sử hoạt động</Typography>
               </Box>
-              <Grid container spacing={0}>
+              <Grid container spacing={0} sx={{ width: '100%', m: 0 }}>
                 {/* Contracts Column */}
                 <Grid size={{ xs: 12, sm: 6 }} sx={{ borderRight: { sm: '1px solid #f0f0f0' } }}>
                    <Box sx={{ p: 2, bgcolor: 'grey.50' }}>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Grid from '@mui/material/Grid';
 import {
   Box,
   Paper,
@@ -7,7 +8,6 @@ import {
   MenuItem,
   Stack,
   Typography,
-  Grid,
   Divider,
   Chip,
 } from '@mui/material';
@@ -30,8 +30,8 @@ const initialForm = {
   idCardNumber: '',
   startDate: null,
   endDate: null,
-  rent: '',
-  deposit: '',
+  actualRent: '',
+  depositAmount: '',
   status: 'ACTIVE',
   contractFiles: [],
 };
@@ -152,40 +152,47 @@ const HostContractCreate = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      
-      // 1. Upload all files first to get metadata IDs
-      const uploadedFileIds = [];
-      if (form.contractFiles && form.contractFiles.length > 0) {
-        for (const file of form.contractFiles) {
-          try {
-            const res = await fileService.upload(file);
-            const fileId = res?.data?.id ?? res?.id;
-            if (fileId) uploadedFileIds.push(fileId);
-          } catch (uploadError) {
-            console.error(`Lỗi khi tải lên file ${file.name}:`, uploadError);
-          }
-        }
-      }
 
-      // 2. Prepare payload with uploaded file IDs
+      // 1. Prepare payload for creating contract first
       const payload = {
         propertyId: form.propertyId,
         roomId: form.roomId,
         tenantId: form.tenantId,
         tenantName: form.tenantName,
         idCardNumber: form.idCardNumber,
-        rent: Number(form.rent),
-        deposit: Number(form.deposit),
+        actualRent: Number(form.actualRent),
+        depositAmount: Number(form.depositAmount),
         status: form.status,
         startDate: form.startDate ? dayjs(form.startDate).format('YYYY-MM-DD') : undefined,
         endDate: form.endDate ? dayjs(form.endDate).format('YYYY-MM-DD') : undefined,
-        contractFileIds: uploadedFileIds 
       };
 
-      await contractManagementService.createContract(payload);
+      // 2. Create the contract to get an ID
+      const response = await contractManagementService.createContract(payload);
+      
+      // Get the new contract ID from response
+      // Check different common response structures
+      const contractId = response?.data?.id ?? response?.id;
+
+      if (!contractId) {
+        throw new Error('Không lấy được ID hợp đồng sau khi tạo.');
+      }
+
+      // 3. Upload all files with refId = contractId
+      if (form.contractFiles && form.contractFiles.length > 0) {
+        try {
+          // Upload all files in one go
+          await fileService.upload(form.contractFiles, contractId);
+        } catch (uploadError) {
+          console.error('Lỗi khi tải lên các file:', uploadError);
+          // Optional: Inform user about upload failure even if contract was created
+        }
+      }
+
       navigate(ROUTES.HOST_CONTRACTS);
     } catch (error) {
       console.error('Lỗi khi lưu hợp đồng:', error);
+      // Bạn có thể thêm thông báo lỗi cho người dùng ở đây (như dùng Snackbar)
     } finally {
       setIsSaving(false);
     }
@@ -200,7 +207,7 @@ const HostContractCreate = () => {
 
       <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <Grid container spacing={2.5}>
+          <Grid container spacing={2.5} sx={{ width: '100%', m: 0 }}>
             {/* Phần 1: Thông tin phòng */}
             <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle1" fontWeight={700} color="primary" sx={{ mb: 1 }}>
@@ -321,9 +328,9 @@ const HostContractCreate = () => {
             <Grid size={{ xs: 12, sm: 3 }}>
               <TextField
                 label="Giá thuê (VND)"
-                name="rent"
+                name="actualRent"
                 type="number"
-                value={form.rent}
+                value={form.actualRent}
                 onChange={handleChange}
                 fullWidth
                 required
@@ -333,9 +340,9 @@ const HostContractCreate = () => {
             <Grid size={{ xs: 12, sm: 3 }}>
               <TextField
                 label="Tiền cọc (VND)"
-                name="deposit"
+                name="depositAmount"
                 type="number"
-                value={form.deposit}
+                value={form.depositAmount}
                 onChange={handleChange}
                 fullWidth
               />

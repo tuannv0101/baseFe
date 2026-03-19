@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Grid from '@mui/material/Grid';
 import {
   Box,
   Paper,
-  Grid,
   Typography,
   TextField,
   Button,
@@ -70,7 +70,7 @@ const TenantEdit = ({ isCreate = false }) => {
       />
 
       <form onSubmit={handleSubmit}>
-        <Grid container spacing={3}>
+        <Grid container spacing={3} sx={{ width: '100%', m: 0 }}>
           {/* Left Column - Main Info */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
@@ -79,7 +79,7 @@ const TenantEdit = ({ isCreate = false }) => {
               </Typography>
               <Divider sx={{ mb: 3 }} />
               
-              <Grid container spacing={2.5}>
+              <Grid container spacing={2.5} sx={{ width: '100%', m: 0 }}>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
@@ -150,7 +150,7 @@ const TenantEdit = ({ isCreate = false }) => {
               </Typography>
               <Divider sx={{ mb: 3 }} />
 
-              <Grid container spacing={2.5}>
+              <Grid container spacing={2.5} sx={{ width: '100%', m: 0 }}>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth

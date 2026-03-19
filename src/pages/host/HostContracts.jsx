@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -14,90 +14,80 @@ import {
   Button,
   Stack,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  MenuItem,
   Chip,
+  InputAdornment,
+  CircularProgress,
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete, Search } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import { ROUTES } from '../../constants';
-
-const initialContracts = [
-  {
-    id: 1,
-    contractCode: 'HD-001',
-    roomNumber: 'P.401',
-    tenantName: 'Nguyen Van A',
-    idCardNumber: '012345678901',
-    startDate: '2025-01-01',
-    endDate: '2025-12-31',
-    rent: 6600000,
-    deposit: 6600000,
-    status: 'ACTIVE',
-  },
-  {
-    id: 2,
-    contractCode: 'HD-002',
-    roomNumber: 'P.402',
-    tenantName: 'Tran Thi B',
-    idCardNumber: '012345678902',
-    startDate: '2025-03-01',
-    endDate: '2026-02-28',
-    rent: 5500000,
-    deposit: 5500000,
-    status: 'ACTIVE',
-  },
-  {
-    id: 3,
-    contractCode: 'HD-003',
-    roomNumber: 'P.403',
-    tenantName: 'Le Van C',
-    idCardNumber: '012345678903',
-    startDate: '2024-06-01',
-    endDate: '2025-05-31',
-    rent: 4500000,
-    deposit: 4500000,
-    status: 'EXPIRED',
-  },
-];
+import { contractManagementService } from '../../services/host/contractManagement';
+import dayjs from 'dayjs';
 
 const statusConfig = {
-  ACTIVE: { label: 'Active', color: 'success' },
-  PENDING: { label: 'Pending', color: 'warning' },
-  EXPIRED: { label: 'Expired', color: 'default' },
-};
-
-const emptyForm = {
-  id: null,
-  contractCode: '',
-  roomNumber: '',
-  tenantName: '',
-  idCardNumber: '',
-  startDate: '',
-  endDate: '',
-  rent: '',
-  deposit: '',
-  status: 'ACTIVE',
+  ACTIVE: { label: 'Đang hiệu lực', color: 'success' },
+  PENDING: { label: 'Chờ xử lý', color: 'warning' },
+  EXPIRED: { label: 'Hết hạn', color: 'default' },
+  CANCELLED: { label: 'Đã hủy', color: 'error' },
 };
 
 const HostContracts = () => {
   const navigate = useNavigate();
-  const [contracts, setContracts] = useState(initialContracts);
+  
+  // State for data and pagination
+  const [contracts, setContracts] = useState([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [loading, setLoading] = useState(false);
+  
+  // Query params state
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const [textSearch, setTextSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
-  const pagedContracts = useMemo(() => {
-    return contracts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [contracts, page, rowsPerPage]);
+  const fetchContracts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = {
+        page,
+        size: rowsPerPage,
+        textSearch: textSearch || undefined,
+      };
+      
+      const response = await contractManagementService.getContracts(params);
+      
+      const data = response?.data || response;
+      const items = data?.content || data?.items || [];
+      const total = data?.totalElements ?? data?.totalCount ?? data?.total ?? 0;
+      
+      setContracts(items);
+      setTotalElements(total || items.length);
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách hợp đồng:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, rowsPerPage, textSearch]);
+
+  useEffect(() => {
+    fetchContracts();
+  }, [fetchContracts]);
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      setTextSearch(searchInput);
+      setPage(0);
+    }
+  };
+
+  const handleSearchClick = () => {
+    setTextSearch(searchInput);
+    setPage(0);
+  };
 
   const formatPrice = (price) => {
-    if (price === '' || price === null || price === undefined) return '';
+    if (price === '' || price === null || price === undefined) return '0 ₫';
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(price));
   };
 
@@ -105,103 +95,139 @@ const HostContracts = () => {
     navigate(ROUTES.HOST_CONTRACT_CREATE);
   };
 
-  const handleOpenEdit = (contract) => {
-    setForm({ ...contract });
-    setDialogOpen(true);
+  const handleOpenEdit = (id) => {
+    navigate(`${ROUTES.HOST_CONTRACTS}/${id}/edit`);
   };
 
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = () => {
-    if (!form.contractCode || !form.roomNumber || !form.tenantName) return;
-
-    if (form.id) {
-      setContracts(prev => prev.map(item => (item.id === form.id ? { ...form } : item)));
-    } else {
-      setContracts(prev => [{ ...form, id: Date.now() }, ...prev]);
-    }
-    setDialogOpen(false);
-  };
-
-  const handleDelete = (id) => {
-    const ok = window.confirm('Xoa hop dong nay?');
+  const handleDelete = async (id) => {
+    const ok = window.confirm('Bạn có chắc chắn muốn xóa hợp đồng này?');
     if (!ok) return;
-    setContracts(prev => prev.filter(item => item.id !== id));
+    
+    try {
+      // await contractManagementService.deleteContract(id);
+      fetchContracts();
+    } catch (error) {
+      console.error('Lỗi khi xóa hợp đồng:', error);
+    }
   };
 
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Hợp đồng thuê"
+        title="Quản lý hợp đồng"
         breadcrumbs={[{ label: 'Chủ trọ' }, { label: 'Hợp đồng thuê' }]}
       />
 
-      <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
-        <Button variant="contained" startIcon={<Add />} onClick={handleOpenCreate}>Thêm hợp đồng</Button>
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }} 
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        spacing={2} 
+        sx={{ mb: 3 }}
+      >
+        <TextField
+          placeholder="Tìm kiếm mã HĐ, tên khách, số phòng..."
+          size="small"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={handleSearch}
+          sx={{ width: { xs: '100%', sm: 350 } }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size="small" />
+              </InputAdornment>
+            ),
+          }}
+        />
+        
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" onClick={handleSearchClick}>Tìm kiếm</Button>
+          <Button variant="contained" startIcon={<Add />} onClick={handleOpenCreate}>
+            Thêm hợp đồng
+          </Button>
+        </Stack>
       </Stack>
 
-      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 16px 0 rgba(0,0,0,0.08)' }}>
+      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 20px 0 rgba(0,0,0,0.06)' }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Mã HĐ</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Phòng</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Tòa nhà / Phòng</TableCell>
               <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Người thuê</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>CCCD/CMND</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Bắt đầu</TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Kết thúc</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Thời hạn</TableCell>
               <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Tiền thuê</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Tiền cọc</TableCell>
               <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }}>Trạng thái</TableCell>
               <TableCell sx={{ fontWeight: 700, bgcolor: 'grey.50' }} align="right">Thao tác</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {pagedContracts.map((contract) => (
-              <TableRow key={contract.id} hover>
-                <TableCell>{contract.contractCode}</TableCell>
-                <TableCell>{contract.roomNumber}</TableCell>
-                <TableCell>{contract.tenantName}</TableCell>
-                <TableCell>{contract.idCardNumber}</TableCell>
-                <TableCell>{contract.startDate}</TableCell>
-                <TableCell>{contract.endDate}</TableCell>
-                <TableCell>{formatPrice(contract.rent)}</TableCell>
-                <TableCell>
-                  <Chip
-                    size="small"
-                    label={statusConfig[contract.status]?.label || contract.status}
-                    color={statusConfig[contract.status]?.color || 'default'}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton size="small" onClick={() => handleOpenEdit(contract)}>
-                    <Edit fontSize="small" />
-                  </IconButton>
-                  <IconButton size="small" color="error" onClick={() => handleDelete(contract.id)}>
-                    <Delete fontSize="small" />
-                  </IconButton>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
+                  <CircularProgress size={32} />
+                  <Typography sx={{ mt: 1 }} color="text.secondary">Đang tải dữ liệu...</Typography>
                 </TableCell>
               </TableRow>
-            ))}
-            {pagedContracts.length === 0 && (
+            ) : contracts.length > 0 ? (
+              contracts.map((contract) => (
+                <TableRow key={contract.id} hover>
+                  <TableCell sx={{ fontWeight: 600, color: 'primary.main' }}>
+                    {contract.contractCode || 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={500}>{contract.propertyName}</Typography>
+                    <Typography variant="caption" color="text.secondary">Phòng: {contract.roomNumber}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={500}>{contract.tenantName}</Typography>
+                    <Typography variant="caption" color="text.secondary">{contract.tenantIdCardNumber}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {contract.startDate ? dayjs(contract.startDate).format('DD/MM/YYYY') : '-'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      đến {contract.endDate ? dayjs(contract.endDate).format('DD/MM/YYYY') : '-'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{formatPrice(contract.actualRent || contract.rentAmount)}</TableCell>
+                  <TableCell>{formatPrice(contract.depositAmount)}</TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      label={statusConfig[contract.status]?.label || contract.status}
+                      color={statusConfig[contract.status]?.color || 'default'}
+                      sx={{ fontWeight: 600 }}
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                      <IconButton size="small" onClick={() => handleOpenEdit(contract.id)} title="Chỉnh sửa">
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton size="small" color="error" onClick={() => handleDelete(contract.id)} title="Xóa">
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
               <TableRow>
-                <TableCell colSpan={9} align="center" sx={{ py: 5 }}>
-                  <Typography variant="body1" color="text.secondary">Khong co hop dong</Typography>
+                <TableCell colSpan={8} align="center" sx={{ py: 10 }}>
+                  <Typography variant="body1" color="text.secondary">Không tìm thấy hợp đồng nào</Typography>
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[5, 10, 20, 50]}
           component="div"
-          count={contracts.length}
+          count={totalElements}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}
@@ -212,92 +238,6 @@ const HostContracts = () => {
           labelRowsPerPage="Số dòng mỗi trang:"
         />
       </TableContainer>
-
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>{form.id ? 'Chỉnh sửa hop dong' : 'Thêm hợp đồng'}</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-            <TextField
-              label="Mã hợp đồng"
-              name="contractCode"
-              value={form.contractCode}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Phòng"
-              name="roomNumber"
-              value={form.roomNumber}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Người thuê"
-              name="tenantName"
-              value={form.tenantName}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="CCCD/CMND"
-              name="idCardNumber"
-              value={form.idCardNumber}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Bắt đầu"
-              name="startDate"
-              type="date"
-              value={form.startDate}
-              onChange={handleChange}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="Kết thúc"
-              name="endDate"
-              type="date"
-              value={form.endDate}
-              onChange={handleChange}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="Tiền thuê"
-              name="rent"
-              type="number"
-              value={form.rent}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Tiền cọc"
-              name="deposit"
-              type="number"
-              value={form.deposit}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Trạng thái"
-              name="status"
-              select
-              value={form.status}
-              onChange={handleChange}
-              fullWidth
-            >
-              <MenuItem value="ACTIVE">ACTIVE</MenuItem>
-              <MenuItem value="PENDING">PENDING</MenuItem>
-              <MenuItem value="EXPIRED">EXPIRED</MenuItem>
-            </TextField>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Hủy</Button>
-          <Button variant="contained" onClick={handleSave}>Lưu</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

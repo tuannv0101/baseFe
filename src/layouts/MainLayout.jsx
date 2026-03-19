@@ -18,7 +18,7 @@ import {
   Tooltip,
   useMediaQuery,
   useTheme,
-  Paper, // Đã bổ sung Paper vào đây
+  Paper,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -29,7 +29,6 @@ import {
   Settings as SettingsIcon,
   SupportAgent as SupportAgentIcon,
   Subscriptions as SubscriptionsIcon,
-  Build as BuildIcon,
   Description as DescriptionIcon,
   Person as PersonIcon,
   Logout,
@@ -38,6 +37,7 @@ import {
   Payment,
   ReportProblem,
   InsertDriveFile,
+  Notifications,
 } from '@mui/icons-material';
 import useUserStore from '../store/useUserStore';
 import { ROUTES, ROLES } from '../constants';
@@ -60,9 +60,10 @@ const getMenuItems = (role) => {
         { title: 'Quản lý tòa nhà', icon: <HomeWorkIcon />, path: ROUTES.HOST_BUILDINGS },
         { title: 'Khách thuê', icon: <PeopleIcon />, path: ROUTES.HOST_TENANTS },
         { title: 'Hợp đồng thuê', icon: <DescriptionIcon />, path: ROUTES.HOST_CONTRACTS },
-        { title: 'Dịch vụ & Tiện ích', icon: <BuildIcon />, path: ROUTES.HOST_SERVICES },
         { title: 'Tài chính', icon: <Payment />, path: ROUTES.HOST_FINANCE },
-        { title: 'Nhân viên', icon: <Engineering />, path: ROUTES.HOST_STAFF },
+        { title: 'Gói dịch vụ', icon: <SubscriptionsIcon />, path: ROUTES.HOST_SUBSCRIPTIONS },
+        { title: 'Yêu cầu Hỗ trợ', icon: <SupportAgentIcon />, path: ROUTES.HOST_SUPPORT },
+        { title: 'Thông báo', icon: <Notifications />, path: ROUTES.HOST_NOTIFICATIONS },
       ];
     case ROLES.TENANT:
       return [
@@ -79,12 +80,12 @@ const getMenuItems = (role) => {
 const MainLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const { user, role, logout, isAuthenticated } = useUserStore();
   const menuItems = getMenuItems(role);
 
@@ -116,13 +117,15 @@ const MainLayout = ({ children }) => {
           RENTAL MANAGER
         </Typography>
       </Toolbar>
+
       <Box sx={{ px: 2, mb: 2 }}>
-         <Paper elevation={0} sx={{ p: 2, bgcolor: 'primary.light', borderRadius: 2, textAlign: 'center' }}>
-            <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700, textTransform: 'uppercase' }}>
-              VAI TRÒ: {role?.replace('_', ' ')}
-            </Typography>
-         </Paper>
+        <Paper elevation={0} sx={{ p: 2, bgcolor: 'primary.light', borderRadius: 2, textAlign: 'center' }}>
+          <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700, textTransform: 'uppercase' }}>
+            VAI TRÒ: {role?.replace('_', ' ')}
+          </Typography>
+        </Paper>
       </Box>
+
       <List sx={{ flexGrow: 1, px: 1 }}>
         {menuItems.map((item) => {
           const isSelected = location.pathname === item.path;
@@ -137,14 +140,10 @@ const MainLayout = ({ children }) => {
                   borderRadius: 2,
                   bgcolor: isSelected ? 'primary.main' : 'transparent',
                   color: isSelected ? 'white' : 'text.primary',
-                  '&:hover': {
-                    bgcolor: isSelected ? 'primary.main' : 'rgba(0, 0, 0, 0.04)',
-                  },
+                  '&:hover': { bgcolor: isSelected ? 'primary.main' : 'rgba(0, 0, 0, 0.04)' },
                 }}
               >
-                <ListItemIcon sx={{ color: isSelected ? 'white' : 'inherit', minWidth: 40 }}>
-                  {item.icon}
-                </ListItemIcon>
+                <ListItemIcon sx={{ color: isSelected ? 'white' : 'inherit', minWidth: 40 }}>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.title} primaryTypographyProps={{ fontWeight: isSelected ? 600 : 500, fontSize: '0.9rem' }} />
               </ListItemButton>
             </ListItem>
@@ -177,21 +176,23 @@ const MainLayout = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          
+
           <Typography variant="h6" fontWeight={700} sx={{ display: { xs: 'none', sm: 'block' } }}>
-            {menuItems.find(item => item.path === location.pathname)?.title || 'Hệ thống'}
+            {menuItems.find((item) => item.path === location.pathname)?.title || 'Hệ thống'}
           </Typography>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
-              <Typography variant="body2" fontWeight={600}>{user?.username}</Typography>
-              <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {user?.username}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {user?.email}
+              </Typography>
             </Box>
             <Tooltip title="Tài khoản">
               <IconButton onClick={handleMenuOpen} size="small">
-                <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 700 }}>
-                  {user?.avatar}
-                </Avatar>
+                <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 700 }}>{user?.avatar}</Avatar>
               </IconButton>
             </Tooltip>
             <Menu
@@ -202,11 +203,15 @@ const MainLayout = ({ children }) => {
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
               <MenuItem onClick={handleMenuClose}>
-                <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+                <ListItemIcon>
+                  <PersonIcon fontSize="small" />
+                </ListItemIcon>
                 Thông tin cá nhân
               </MenuItem>
               <MenuItem onClick={handleLogout}>
-                <ListItemIcon><Logout fontSize="small" /></ListItemIcon>
+                <ListItemIcon>
+                  <Logout fontSize="small" />
+                </ListItemIcon>
                 Đăng xuất
               </MenuItem>
             </Menu>
@@ -214,10 +219,7 @@ const MainLayout = ({ children }) => {
         </Toolbar>
       </AppBar>
 
-      <Box
-        component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-      >
+      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -250,3 +252,4 @@ const MainLayout = ({ children }) => {
 };
 
 export default MainLayout;
+

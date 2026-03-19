@@ -1,9 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import Grid from '@mui/material/Grid';
 import {
   Box,
   Paper,
-  Grid,
   Typography,
   Divider,
   TextField,
@@ -233,8 +233,8 @@ const RoomEdit = ({ isCreate = false }) => {
 
       <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
         <Typography variant="h6" fontWeight={700} gutterBottom>Thông tin cơ bản</Typography>
-        <Grid container spacing={2.5}>
-          <Grid item xs={12} sm={6}>
+        <Grid container spacing={2.5} sx={{ width: '100%', m: 0 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="Tòa nhà"
@@ -250,7 +250,7 @@ const RoomEdit = ({ isCreate = false }) => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="Số phòng / Tên phòng"
@@ -262,7 +262,7 @@ const RoomEdit = ({ isCreate = false }) => {
               placeholder="Ví dụ: P.101"
             />
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField
               fullWidth
               label="Loại phòng"
@@ -277,7 +277,7 @@ const RoomEdit = ({ isCreate = false }) => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField
               fullWidth
               label="Giá thuê (VNĐ)"
@@ -288,7 +288,7 @@ const RoomEdit = ({ isCreate = false }) => {
               size="small"
             />
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField
               fullWidth
               label="Trạng thái"
@@ -303,7 +303,7 @@ const RoomEdit = ({ isCreate = false }) => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="Diện tích (m2)"
@@ -314,7 +314,7 @@ const RoomEdit = ({ isCreate = false }) => {
               size="small"
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="Tầng"

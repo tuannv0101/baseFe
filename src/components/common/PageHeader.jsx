@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, Breadcrumbs, Link, Button, Stack } from '@mui/material';
 import { NavigateNext } from '@mui/icons-material';
 
-const PageHeader = ({ title, breadcrumbs, action }) => {
+const PageHeader = ({ title, breadcrumbs, action, actions }) => {
   return (
     <Box sx={{ mb: 4 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -29,7 +29,9 @@ const PageHeader = ({ title, breadcrumbs, action }) => {
             {title}
           </Typography>
         </Box>
-        {action && (
+        {actions ? (
+          actions
+        ) : action ? (
           <Button 
             variant="contained" 
             startIcon={action.icon} 
@@ -38,7 +40,7 @@ const PageHeader = ({ title, breadcrumbs, action }) => {
           >
             {action.label}
           </Button>
-        )}
+        ) : null}
       </Stack>
     </Box>
   );
