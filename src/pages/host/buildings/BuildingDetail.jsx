@@ -107,12 +107,36 @@ const BuildingDetail = () => {
   const [editingServices, setEditingServices] = useState([]);
   const [savingServices, setSavingServices] = useState(false);
 
+  const normalizeService = useCallback((raw, index) => {
+    const data = raw ?? {};
+    const serviceName = data.name ?? data.serviceName ?? data.service_name ?? '';
+    const serviceUnit = data.unit ?? data.unitType ?? data.unit_type ?? data.unitName ?? '';
+    const rawPrice = data.price ?? data.unitPrice ?? data.unit_price ?? data.servicePrice ?? 0;
+    const rawEnabled = data.enabled ?? data.isEnabled ?? data.active;
+
+    const enabled =
+      rawEnabled === undefined || rawEnabled === null
+        ? true
+        : rawEnabled === true || rawEnabled === 1 || rawEnabled === '1' || rawEnabled === 'true' || rawEnabled === 'Y' || rawEnabled === 'y';
+
+    return {
+      ...data,
+      id: data.id ?? data.serviceId ?? index,
+      serviceId: data.serviceId ?? data.id ?? null,
+      name: serviceName,
+      unit: serviceUnit,
+      price: Number(rawPrice) || 0,
+      enabled,
+    };
+  }, []);
+
   const fetchServices = useCallback(async () => {
     try {
       const serviceRes = await propertyManagementService.getPropertyServices(id);
-      const list = serviceRes?.data || serviceRes || [];
-      if (Array.isArray(list) && list.length > 0) {
-        setServices(list);
+      const rawList = serviceRes?.items ?? serviceRes?.data?.items ?? serviceRes?.data ?? serviceRes ?? [];
+      const list = Array.isArray(rawList) ? rawList : [];
+      if (list.length > 0) {
+        setServices(list.map(normalizeService));
       } else {
         setServices([
           { id: '1', name: 'Điện', unit: 'kWh', price: 3500, enabled: true },
@@ -133,7 +157,7 @@ const BuildingDetail = () => {
         { id: '6', name: 'Gửi xe', unit: 'Xe', price: 100000, enabled: true },
       ]);
     }
-  }, [id]);
+  }, [id, normalizeService]);
 
   const fetchBuildingData = useCallback(async () => {
     setLoading(true);
@@ -167,7 +191,11 @@ const BuildingDetail = () => {
 
   const handleUpdateEditingService = (index, field, value) => {
     const updated = [...editingServices];
-    updated[index] = { ...updated[index], [field]: value };
+    const next = { ...updated[index], [field]: value };
+    if (field === 'price') next.unitPrice = value;
+    if (field === 'unit') next.unitType = value;
+    if (field === 'enabled') next.isEnabled = value;
+    updated[index] = next;
     setEditingServices(updated);
   };
 
@@ -446,11 +474,15 @@ const BuildingDetail = () => {
       </Box>
 
       <Grid container spacing={2} sx={{ width: '100%', m: 0, mb: 3 }}>
-        {enabledServices.map((service) => {
-          const color = colorMap[service.name] || '#2563eb';
-          const icon = iconMap[service.name] || <Payments />;
+        {enabledServices.map((service, index) => {
+          const name = service.name ?? service.serviceName ?? '';
+          const unit = service.unit ?? service.unitType ?? '';
+          const price = service.price ?? service.unitPrice ?? 0;
+
+          const color = colorMap[name] || '#2563eb';
+          const icon = iconMap[name] || <Payments />;
           return (
-            <Grid key={service.id} size={{ xs: 12, sm: 6, md: 4 }}>
+            <Grid key={service.id || service.serviceId || index} size={{ xs: 12, sm: 6, md: 4 }}>
               <Paper
                 elevation={0}
                 sx={{
@@ -468,12 +500,12 @@ const BuildingDetail = () => {
                 <Box sx={{ p: 1.25, borderRadius: 3, bgcolor: alpha(color, 0.12), color, display: 'grid', placeItems: 'center' }}>{icon}</Box>
                 <Box sx={{ minWidth: 0 }}>
                   <Typography variant="subtitle2" fontWeight={900} sx={{ color: '#0f172a' }}>
-                    {service.name}
+                    {name}
                   </Typography>
                   <Typography variant="body2" fontWeight={900} sx={{ color }}>
-                    {formatPrice(service.price)}
+                    {formatPrice(price)}
                     <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                      /{service.unit}
+                      /{unit}
                     </Typography>
                   </Typography>
                 </Box>
@@ -509,18 +541,22 @@ const BuildingDetail = () => {
         <DialogContent dividers>
           <Stack spacing={2.5} sx={{ py: 0.5 }}>
             {editingServices.map((service, index) => {
-              const color = colorMap[service.name] || '#2563eb';
-              const icon = iconMap[service.name] || <Payments fontSize="small" />;
+              const name = service.name ?? service.serviceName ?? '';
+              const unit = service.unitType ?? service.unit ?? '';
+              const price = service.unitPrice ?? service.price ?? 0;
+
+              const color = colorMap[name] || '#2563eb';
+              const icon = iconMap[name] || <Payments fontSize="small" />;
               const disabled = service.enabled === false;
               return (
-                <Box key={service.id || index}>
+                <Box key={service.id || service.serviceId || index}>
                   <Stack direction="row" spacing={1.25} alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
                     <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
                       <Box sx={{ p: 1, borderRadius: 2.5, bgcolor: alpha(color, 0.12), color, display: 'grid', placeItems: 'center', flex: '0 0 auto' }}>
                         {icon}
                       </Box>
                       <Typography variant="subtitle1" fontWeight={900} sx={{ color: '#0f172a' }}>
-                        {service.name}
+                        {name}
                       </Typography>
                     </Stack>
                     <FormControlLabel
@@ -543,7 +579,7 @@ const BuildingDetail = () => {
                         label="Đơn giá"
                         type="number"
                         size="small"
-                        value={service.price}
+                        value={price}
                         disabled={savingServices || disabled}
                         onChange={(e) => handleUpdateEditingService(index, 'price', Number(e.target.value))}
                         InputProps={{ endAdornment: <InputAdornment position="end">đ</InputAdornment> }}
@@ -554,7 +590,7 @@ const BuildingDetail = () => {
                         fullWidth
                         label="Đơn vị"
                         size="small"
-                        value={service.unit}
+                        value={unit}
                         disabled={savingServices || disabled}
                         onChange={(e) => handleUpdateEditingService(index, 'unit', e.target.value)}
                       />
@@ -616,8 +652,8 @@ const BuildingDetail = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rooms.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((room) => (
-                  <TableRow key={room.id} hover>
+                {rooms.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((room, index) => (
+                  <TableRow key={room.roomId || room.id || index} hover>
                     <TableCell>
                       <Typography
                         variant="body2"
@@ -645,7 +681,7 @@ const BuildingDetail = () => {
                         </Typography>
                       )}
                     </TableCell>
-                    <TableCell align="center">{getStatusDisplay(room.statusRoom)}</TableCell>
+                    <TableCell align="center">{getStatusDisplay(room.status)}</TableCell>
                     <TableCell align="right">
                       <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                         <Tooltip title="Xem chi tiết">

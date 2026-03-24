@@ -2,6 +2,12 @@ import axiosInstance from '../../../api/axios';
 import type { RoomManagerCreateReqDTO } from './type';
 
 const roomManagementService = {
+  // GET /api/v1/host/property-management/rooms/{roomId}/detail
+  getRoomDetail: async (roomId: string | number) => {
+    const response = await axiosInstance.get(`/api/v1/host/property-management/rooms/${roomId}/detail`);
+    return response.data;
+  },
+
   // GET /api/v1/host/room-management/rooms/{roomId}
   getRoomById: async (roomId: string | number) => {
     const response = await axiosInstance.get(`/api/v1/host/room-management/rooms/${roomId}`);
