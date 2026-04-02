@@ -1,321 +1,295 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Grid from '@mui/material/Grid';
 import {
-  Box,
-  Paper,
-  Typography,
-  Stack,
-  Tabs,
-  Tab,
-  Chip,
-  Divider,
-  TextField,
-  MenuItem,
-  Button,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
+  Alert,
   Avatar,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Divider,
+  IconButton,
+  MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+  alpha,
 } from '@mui/material';
 import {
-  Build as BuildIcon,
-  ReportProblem as ReportProblemIcon,
-  CheckCircleOutline,
-  HourglassEmpty,
-  AssignmentTurnedIn,
+  Autorenew,
+  BuildCircle,
+  NotificationsActive,
+  ReceiptLong,
+  Search,
+  WarningAmber,
+  WorkspacePremium,
 } from '@mui/icons-material';
+import dayjs from 'dayjs';
 import PageHeader from '../../components/common/PageHeader';
+import { hostDashboardService, normalizeDashboardNotifications } from '../../services/host';
 
-const mockRequests = [
-  {
-    id: 'REQ-001',
-    building: 'Tòa A1',
-    room: 'P.204',
-    title: 'Sửa vòi nước bị rò',
-    description: 'Vòi nước nhà tắm rò liên tục, đề nghị kiểm tra sớm.',
-    createdAt: '18/03/2026',
-    priority: 'HIGH',
-    status: 'NEW',
-    category: 'REPAIR',
-    reporter: 'Trần Thị B',
-  },
-  {
-    id: 'REQ-002',
-    building: 'Tòa B1',
-    room: 'P.102',
-    title: 'Điều hòa không lạnh',
-    description: 'Bật lâu nhưng không mát, có tiếng kêu nhẹ.',
-    createdAt: '17/03/2026',
-    priority: 'MEDIUM',
-    status: 'IN_PROGRESS',
-    category: 'MAINTENANCE',
-    reporter: 'Nguyễn Văn A',
-  },
-  {
-    id: 'REQ-003',
-    building: 'Tòa A1',
-    room: 'P.305',
-    title: 'Đèn hành lang chập chờn',
-    description: 'Đèn khu vực cửa phòng chập chờn vào buổi tối.',
-    createdAt: '16/03/2026',
-    priority: 'LOW',
-    status: 'DONE',
-    category: 'REPAIR',
-    reporter: 'Lê Văn C',
-  },
+const typeConfig = {
+  all: { label: 'Tất cả', color: '#2563eb', icon: <NotificationsActive /> },
+  billing: { label: 'Công nợ', color: '#ef4444', icon: <ReceiptLong /> },
+  contract: { label: 'Hợp đồng', color: '#2563eb', icon: <WorkspacePremium /> },
+  maintenance: { label: 'Bảo trì', color: '#f59e0b', icon: <BuildCircle /> },
+  general: { label: 'Khác', color: '#64748b', icon: <WarningAmber /> },
+};
+
+const severityOptions = [
+  { value: 'ALL', label: 'Tất cả mức độ' },
+  { value: 'high', label: 'Cao' },
+  { value: 'medium', label: 'Trung bình' },
+  { value: 'low', label: 'Thấp' },
 ];
 
-const priorityConfig = {
-  HIGH: { label: 'Cao', color: 'error' },
-  MEDIUM: { label: 'Trung bình', color: 'warning' },
-  LOW: { label: 'Thấp', color: 'success' },
+const getSeverityTone = (severity) => {
+  const value = String(severity || '').toLowerCase();
+  if (value.includes('high') || value.includes('urgent') || value.includes('critical')) return { label: 'Cao', color: 'error' };
+  if (value.includes('low')) return { label: 'Thấp', color: 'success' };
+  return { label: 'Trung bình', color: 'warning' };
 };
 
-const statusConfig = {
-  NEW: { label: 'Mới', color: 'info' },
-  IN_PROGRESS: { label: 'Đang xử lý', color: 'warning' },
-  DONE: { label: 'Hoàn tất', color: 'success' },
+const formatDateTime = (value) => {
+  if (!value) return 'Mới phát sinh';
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('DD/MM/YYYY HH:mm') : String(value);
 };
 
-const categoryConfig = {
-  REPAIR: { label: 'Sửa chữa', icon: <BuildIcon fontSize="small" /> },
-  MAINTENANCE: { label: 'Bảo trì', icon: <ReportProblemIcon fontSize="small" /> },
+const NotificationCard = ({ item }) => {
+  const config = typeConfig[item.type] || typeConfig.general;
+  const severity = getSeverityTone(item.severity);
+  const metaLine = [item.propertyName, item.roomNumber && `Phòng ${item.roomNumber}`, formatDateTime(item.createdAt)].filter(Boolean).join(' • ');
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2.25,
+        borderRadius: 4,
+        border: '1px solid #e2e8f0',
+        transition: 'all 140ms ease',
+        '&:hover': {
+          borderColor: alpha(config.color, 0.35),
+          boxShadow: `0 12px 28px ${alpha(config.color, 0.12)}`,
+          transform: 'translateY(-1px)',
+        },
+      }}
+    >
+      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+        <Avatar sx={{ width: 44, height: 44, bgcolor: alpha(config.color, 0.12), color: config.color }}>
+          {config.icon}
+        </Avatar>
+
+        <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} sx={{ mb: 0.75 }}>
+            <Typography variant="subtitle1" fontWeight={900} sx={{ color: '#0f172a' }}>
+              {item.title}
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+              <Chip
+                label={config.label}
+                size="small"
+                sx={{ fontWeight: 800, bgcolor: alpha(config.color, 0.12), color: config.color }}
+              />
+              <Chip label={`Mức độ: ${severity.label}`} size="small" color={severity.color} variant="outlined" sx={{ fontWeight: 800 }} />
+              {item.status && <Chip label={item.status} size="small" variant="outlined" sx={{ fontWeight: 800 }} />}
+            </Stack>
+          </Stack>
+
+          {item.description && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {item.description}
+            </Typography>
+          )}
+
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+            {metaLine || 'Thông tin chi tiết sẽ hiển thị khi backend trả về dữ liệu đầy đủ.'}
+          </Typography>
+        </Box>
+      </Stack>
+    </Paper>
+  );
 };
 
 const HostNotifications = () => {
-  const [tab, setTab] = useState(0);
-  const [requests, setRequests] = useState(mockRequests);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+  const [severityFilter, setSeverityFilter] = useState('ALL');
   const [searchText, setSearchText] = useState('');
-  const [priority, setPriority] = useState('ALL');
-  const [category, setCategory] = useState('ALL');
 
-  const filtered = useMemo(() => {
-    const q = searchText.trim().toLowerCase();
-    return requests.filter((r) => {
-      if (tab === 1 && r.status !== 'NEW') return false;
-      if (tab === 2 && r.status !== 'IN_PROGRESS') return false;
-      if (tab === 3 && r.status !== 'DONE') return false;
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    setError('');
 
-      if (priority !== 'ALL' && r.priority !== priority) return false;
-      if (category !== 'ALL' && r.category !== category) return false;
+    try {
+      const response = await hostDashboardService.getNotifications({ limit: 50 });
+      setNotifications(normalizeDashboardNotifications(response));
+    } catch (fetchError) {
+      setNotifications([]);
+      setError('Không tải được danh sách cảnh báo từ backend.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      if (!q) return true;
-      const haystack = [r.id, r.building, r.room, r.title, r.description, r.reporter].join(' ').toLowerCase();
-      return haystack.includes(q);
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const summary = useMemo(() => {
+    const counts = { all: notifications.length, billing: 0, contract: 0, maintenance: 0, general: 0 };
+    notifications.forEach((item) => {
+      counts[item.type] = (counts[item.type] || 0) + 1;
     });
-  }, [requests, tab, searchText, priority, category]);
+    return counts;
+  }, [notifications]);
 
-  const countByStatus = useMemo(() => {
-    const c = { NEW: 0, IN_PROGRESS: 0, DONE: 0 };
-    requests.forEach((r) => {
-      c[r.status] = (c[r.status] || 0) + 1;
+  const filteredNotifications = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+
+    return notifications.filter((item) => {
+      if (selectedType !== 'all' && item.type !== selectedType) return false;
+
+      const severityValue = String(item.severity || '').toLowerCase();
+      if (severityFilter !== 'ALL' && !severityValue.includes(severityFilter.toLowerCase())) return false;
+
+      if (!query) return true;
+      const haystack = [item.title, item.description, item.propertyName, item.roomNumber, item.status]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(query);
     });
-    return c;
-  }, [requests]);
-
-  const updateStatus = (id, next) => {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: next } : r)));
-  };
+  }, [notifications, selectedType, severityFilter, searchText]);
 
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Thông báo"
-        breadcrumbs={[{ label: 'Bảng điều khiển' }, { label: 'Thông báo' }]}
+        title="Thông báo vận hành"
+        breadcrumbs={[{ label: 'Host' }, { label: 'Thông báo' }]}
+        actions={
+          <Button
+            variant="outlined"
+            startIcon={<Autorenew />}
+            onClick={fetchNotifications}
+            sx={{ borderRadius: 2.5, fontWeight: 900 }}
+          >
+            Làm mới
+          </Button>
+        }
       />
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden', mb: 3 }}>
-        <Box sx={{ px: 3, py: 2, bgcolor: '#fcfcfd', borderBottom: '1px solid #f1f5f9' }}>
-          <Typography variant="h6" fontWeight={800}>
-            Yêu cầu bảo trì & sửa chữa
+      <Paper elevation={0} sx={{ borderRadius: 4, border: '1px solid #e2e8f0', overflow: 'hidden', mb: 3 }}>
+        <Box sx={{ px: 3, py: 2.5, bgcolor: '#fcfcfd', borderBottom: '1px solid #f1f5f9' }}>
+          <Typography variant="h6" fontWeight={900}>
+            Hộp thư cảnh báo cho chủ trọ
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Danh sách yêu cầu từ các phòng — cập nhật trạng thái để theo dõi xử lý.
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Tổng hợp hóa đơn quá hạn, hợp đồng sắp hết hạn và yêu cầu bảo trì mới phát sinh.
           </Typography>
         </Box>
 
-        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #f1f5f9' }}>
-          <Tabs
-            value={tab}
-            onChange={(_, v) => setTab(v)}
-            sx={{ '& .MuiTab-root': { textTransform: 'none', fontWeight: 800 } }}
-          >
-            <Tab label={`Tất cả (${requests.length})`} />
-            <Tab label={`Mới (${countByStatus.NEW})`} />
-            <Tab label={`Đang xử lý (${countByStatus.IN_PROGRESS})`} />
-            <Tab label={`Hoàn tất (${countByStatus.DONE})`} />
-          </Tabs>
-        </Box>
-
-        <Box sx={{ px: 3, py: 2 }}>
+        <Box sx={{ px: 3, py: 2.5 }}>
           <Grid container spacing={2} sx={{ width: '100%', m: 0 }} alignItems="center">
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid size={{ xs: 12, lg: 7 }}>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                {Object.entries(typeConfig)
+                  .filter(([key]) => ['all', 'billing', 'contract', 'maintenance'].includes(key))
+                  .map(([key, config]) => (
+                    <Chip
+                      key={key}
+                      clickable
+                      icon={config.icon}
+                      label={`${config.label} (${summary[key] || 0})`}
+                      onClick={() => setSelectedType(key)}
+                      variant={selectedType === key ? 'filled' : 'outlined'}
+                      sx={{
+                        fontWeight: 900,
+                        bgcolor: selectedType === key ? alpha(config.color, 0.12) : '#fff',
+                        color: selectedType === key ? config.color : 'text.primary',
+                        borderColor: alpha(config.color, 0.35),
+                      }}
+                    />
+                  ))}
+              </Stack>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6, lg: 3 }}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Mức độ"
+                value={severityFilter}
+                onChange={(event) => setSeverityFilter(event.target.value)}
+              >
+                {severityOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6, lg: 2 }}>
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Tìm theo mã, phòng, nội dung, người gửi..."
+                placeholder="Tìm cảnh báo..."
                 value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
+                onChange={(event) => setSearchText(event.target.value)}
+                InputProps={{
+                  startAdornment: <Search sx={{ mr: 1, fontSize: 18, color: 'text.secondary' }} />,
+                }}
               />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <TextField
-                select
-                fullWidth
-                size="small"
-                label="Ưu tiên"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-              >
-                <MenuItem value="ALL">Tất cả</MenuItem>
-                <MenuItem value="HIGH">Cao</MenuItem>
-                <MenuItem value="MEDIUM">Trung bình</MenuItem>
-                <MenuItem value="LOW">Thấp</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <TextField
-                select
-                fullWidth
-                size="small"
-                label="Loại yêu cầu"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <MenuItem value="ALL">Tất cả</MenuItem>
-                <MenuItem value="REPAIR">Sửa chữa</MenuItem>
-                <MenuItem value="MAINTENANCE">Bảo trì</MenuItem>
-              </TextField>
             </Grid>
           </Grid>
         </Box>
       </Paper>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <List sx={{ p: 0 }}>
-          {filtered.map((r, idx) => {
-            const pri = priorityConfig[r.priority] || { label: r.priority, color: 'default' };
-            const st = statusConfig[r.status] || { label: r.status, color: 'default' };
-            const cat = categoryConfig[r.category] || { label: r.category, icon: <BuildIcon fontSize="small" /> };
+      {error && <Alert severity="warning" sx={{ mb: 3 }}>{error}</Alert>}
 
-            return (
-              <React.Fragment key={r.id}>
-                <ListItem
-                  alignItems="flex-start"
-                  sx={{ px: 3, py: 2.25, bgcolor: idx % 2 === 0 ? 'white' : '#fcfcfd' }}
-                  secondaryAction={
-                    <Stack direction="row" spacing={1}>
-                      <TooltipButton
-                        title="Đang xử lý"
-                        disabled={r.status === 'IN_PROGRESS'}
-                        onClick={() => updateStatus(r.id, 'IN_PROGRESS')}
-                        icon={<HourglassEmpty fontSize="small" />}
-                      />
-                      <TooltipButton
-                        title="Hoàn tất"
-                        disabled={r.status === 'DONE'}
-                        onClick={() => updateStatus(r.id, 'DONE')}
-                        icon={<CheckCircleOutline fontSize="small" />}
-                      />
-                    </Stack>
-                  }
-                >
-                  <Avatar sx={{ bgcolor: 'grey.100', color: 'text.secondary', mr: 2 }}>
-                    {cat.icon}
-                  </Avatar>
-                  <ListItemText
-                    primary={
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
-                        <Typography variant="subtitle1" fontWeight={900} component="div">
-                          {r.title}
-                        </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Chip label={st.label} size="small" color={st.color} sx={{ fontWeight: 800 }} />
-                          <Chip label={`Ưu tiên: ${pri.label}`} size="small" color={pri.color} variant="outlined" sx={{ fontWeight: 800 }} />
-                        </Stack>
-                      </Stack>
-                    }
-                    secondary={
-                      <Box sx={{ mt: 0.75 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }} component="div">
-                          {r.description}
-                        </Typography>
-                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }}>
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            label={`${r.building} • ${r.room}`}
-                            sx={{ fontWeight: 700 }}
-                          />
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            label={`Người gửi: ${r.reporter}`}
-                            sx={{ fontWeight: 700 }}
-                          />
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            label={`Ngày: ${r.createdAt}`}
-                            sx={{ fontWeight: 700 }}
-                          />
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            label={cat.label}
-                            sx={{ fontWeight: 700 }}
-                          />
-                          {r.status === 'DONE' && (
-                            <Chip
-                              size="small"
-                              color="success"
-                              icon={<AssignmentTurnedIn fontSize="small" />}
-                              label="Đã xử lý"
-                              sx={{ fontWeight: 800 }}
-                            />
-                          )}
-                        </Stack>
-                      </Box>
-                    }
-                  />
-                </ListItem>
-                {idx < filtered.length - 1 && <Divider />}
-              </React.Fragment>
-            );
-          })}
-          {filtered.length === 0 && (
-            <Box sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                Không có yêu cầu nào phù hợp bộ lọc.
+      <Paper elevation={0} sx={{ borderRadius: 4, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <Box sx={{ px: 3, py: 2, bgcolor: '#fcfcfd', borderBottom: '1px solid #f1f5f9' }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography variant="subtitle1" fontWeight={900}>
+                Danh sách cảnh báo
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {filteredNotifications.length} mục phù hợp với bộ lọc hiện tại
               </Typography>
             </Box>
-          )}
-        </List>
+            <Tooltip title="Nạp lại dữ liệu">
+              <IconButton onClick={fetchNotifications} size="small">
+                <Autorenew fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Box>
+
+        {loading ? (
+          <Box sx={{ py: 10, display: 'grid', placeItems: 'center' }}>
+            <CircularProgress />
+          </Box>
+        ) : filteredNotifications.length > 0 ? (
+          <Stack spacing={0} divider={<Divider flexItem />} sx={{ p: 2 }}>
+            {filteredNotifications.map((item) => (
+              <NotificationCard key={item.id} item={item} />
+            ))}
+          </Stack>
+        ) : (
+          <Box sx={{ py: 10, px: 3, textAlign: 'center', color: 'text.secondary' }}>
+            <Typography variant="body2">Không có cảnh báo nào khớp với bộ lọc hiện tại.</Typography>
+          </Box>
+        )}
       </Paper>
     </Box>
   );
 };
 
-const TooltipButton = ({ title, icon, onClick, disabled }) => {
-  return (
-    <IconButton
-      size="small"
-      onClick={onClick}
-      disabled={disabled}
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        bgcolor: 'white',
-      }}
-      aria-label={title}
-      title={title}
-    >
-      {icon}
-    </IconButton>
-  );
-};
-
 export default HostNotifications;
-
